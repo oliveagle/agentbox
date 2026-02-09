@@ -1,5 +1,5 @@
 #!/bin/bash
-# 生成 Agent 快捷命令 wrapper 脚本
+# Generate Agent shortcut commands
 
 set -euo pipefail
 
@@ -14,7 +14,7 @@ generate_wrapper() {
     cat > "$wrapper_path" << WRAPPER
 #!/bin/bash
 # AI Agent Toolbox Wrapper for ${agent}
-# 自动生成，请勿手动修改
+# Auto-generated, do not edit manually
 
 set -euo pipefail
 
@@ -22,43 +22,43 @@ AGENT="${agent}"
 TOOLBOX_CMD="agent-toolbox"
 
 show_help() {
-    cat << 'HELP'
-快捷命令: ${wrapper_name}
+  cat << 'HELP'
+  Command: ${wrapper_name}
 
-用法:
-  ${wrapper_name} create [project]     创建 toolbox
-  ${wrapper_name} enter [project]      进入 toolbox（默认）
-  ${wrapper_name} run [project] [cmd]  运行命令
-  ${wrapper_name} build                构建镜像
-  ${wrapper_name} rm [project]         删除 toolbox
-  ${wrapper_name} list                 列出此 agent 的 toolbox
+Usage:
+  ${wrapper_name} create [project]     Create toolbox
+  ${wrapper_name} enter [project]     Enter toolbox (default)
+  ${wrapper_name} run [project] [cmd]  Run command
+  ${wrapper_name} build               Build image
+  ${wrapper_name} rm [project]        Delete toolbox
+  ${wrapper_name} list                List toolboxes
 
-示例:
-  ${wrapper_name}              # 进入默认项目
-  ${wrapper_name} .            # 进入当前目录（自动获取项目名）
-  ${wrapper_name} myproject    # 进入指定项目
-  ${wrapper_name} create .     # 为当前目录创建 toolbox
-  ${wrapper_name} run .        # 运行 agent（默认命令）
-  ${wrapper_name} run . git status   # 在 toolbox 中运行 git status
+Examples:
+  ${wrapper_name}              # Enter default project
+  ${wrapper_name} .            # Enter current directory
+  ${wrapper_name} myproject    # Enter specified project
+  ${wrapper_name} create .     # Create toolbox for current dir
+  ${wrapper_name} run .        # Run agent (default command)
+  ${wrapper_name} run . git status   # Run git status in toolbox
 
 HELP
 }
 
-# 解析参数
-cmd="
+# Parse arguments
+cmd=""
 project=""
 args=()
 
-# 第一个参数可能是命令或项目名
+# First argument could be command or project name
 if [[ \$# -eq 0 ]]; then
-    # 无参数：直接进入默认项目
+    # No args: enter default project
     cmd="enter"
     project="."
 elif [[ "\$1" == "--help" || "\$1" == "-h" || "\$1" == "help" ]]; then
     show_help
     exit 0
 else
-    # 检查第一个参数是否是子命令
+    # Check if first arg is a subcommand
     case "\$1" in
         create|enter|run|build|rm|remove|list|ls)
             cmd="\$1"
@@ -68,7 +68,7 @@ else
             args=("\$@")
             ;;
         *)
-            # 不是命令，视为项目名
+            # Not a command, treat as project name
             cmd="enter"
             project="\$1"
             shift
@@ -77,7 +77,7 @@ else
     esac
 fi
 
-# 执行命令
+# Execute command
 case "\$cmd" in
     create)
         \$TOOLBOX_CMD create "\$AGENT" "\$project"
@@ -102,7 +102,7 @@ case "\$cmd" in
         \$TOOLBOX_CMD list | grep "toolbox-\$AGENT"
         ;;
     *)
-        echo "未知命令: \$cmd"
+        echo "Unknown command: \$cmd"
         show_help
         exit 1
         ;;
@@ -113,9 +113,9 @@ WRAPPER
     echo "Generated: $wrapper_path"
 }
 
-# 主函数
+# Main function
 main() {
-    echo "生成 Agent 快捷命令..."
+    echo "Generating agent shortcut commands..."
     echo
     
     mkdir -p "$INSTALL_DIR"
@@ -125,17 +125,17 @@ main() {
     done
     
     echo
-    echo "快捷命令已生成到: $INSTALL_DIR"
+    echo "Shortcut commands generated at: $INSTALL_DIR"
     echo
-    echo "现在你可以使用:"
+    echo "You can now use:"
     for agent in $AGENTS; do
         echo "  agent-toolbox-${agent}"
     done
     echo
-    echo "例如:"
-    echo "  agent-toolbox-opencode .          # 进入 opencode toolbox"
-    echo "  agent-toolbox-claude-code create  # 创建 claude-code toolbox"
-    echo "  agent-toolbox-kilo run . npm test # 在 kilo toolbox 中运行命令"
+    echo "Examples:"
+    echo "  agent-toolbox-opencode .          # Enter opencode toolbox"
+    echo "  agent-toolbox-claude-code create  # Create claude-code toolbox"
+    echo "  agent-toolbox-kilo run . npm test # Run npm test in kilo toolbox"
 }
 
 main "$@"

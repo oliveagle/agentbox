@@ -633,6 +633,7 @@ run_toolbox() {
 
 # 列出所有 toolbox
 list_toolboxes() {
+    get_user_info
     log_info "AI Agent Toolbox 容器:"
     echo
     
