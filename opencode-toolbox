@@ -170,6 +170,13 @@ generate_mount_args() {
         [[ -d "${HOST_HOME}/.git-hooks" ]] && mount_args+=(--volume "${HOST_HOME}/.git-hooks:${HOST_HOME}/.git-hooks:ro")
     fi
     
+    # opencode 配置（默认挂载，包含 API keys、主题等）
+    local mount_opencode
+    mount_opencode=$(parse_config "mount_opencode" "true")
+    if [[ "$mount_opencode" == "true" && -d "${HOST_HOME}/.config/opencode" ]]; then
+        mount_args+=(--volume "${HOST_HOME}/.config/opencode:${HOST_HOME}/.config/opencode:rw")
+    fi
+    
     local mount_docker
     mount_docker=$(parse_config "mount_docker" "false")
     if [[ "$mount_docker" == "true" ]]; then

@@ -20,8 +20,11 @@ defaults:
   # 是否挂载 Git 配置 (默认 true)
   mount_gitconfig: true
 
+  # 是否挂载 opencode 配置 (默认 true)
+  mount_opencode: true
+
   # 是否挂载 Docker/Podman socket (默认 false)
-  mount_docker: true
+  mount_docker: false
 
   # X11/Wayland 支持 (默认 true)
   mount_display: true
