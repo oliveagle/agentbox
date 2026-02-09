@@ -1,5 +1,6 @@
 # Claude Code Agent Toolbox
-FROM localhost/toolbox-base:latest
+ARG BASE_IMAGE=ghcr.io/oliveagle/toolbox-opencode/toolbox-base:latest
+FROM ${BASE_IMAGE}
 
 LABEL agent="claude-code"
 LABEL description="Claude Code AI coding agent toolbox"

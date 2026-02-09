@@ -1,5 +1,6 @@
 # Qwen Agent Toolbox
-FROM localhost/toolbox-base:latest
+ARG BASE_IMAGE=ghcr.io/oliveagle/toolbox-opencode/toolbox-base:latest
+FROM ${BASE_IMAGE}
 
 LABEL agent="qwen"
 LABEL description="Qwen AI coding agent toolbox"

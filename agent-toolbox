@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # 基础配置
-TOOLBOX_BASE_IMAGE="${TOOLBOX_BASE_IMAGE:-localhost/toolbox-base:latest}"
+TOOLBOX_BASE_IMAGE="${TOOLBOX_BASE_IMAGE:-ghcr.io/oliveagle/toolbox-opencode/toolbox-base:latest}"
 CONTAINER_ENGINE="${CONTAINER_ENGINE:-podman}"
 INSTALL_DIR="${INSTALL_DIR:-${HOME}/.local/share/agent-toolbox}"
 CONFIG_DIR="${HOME}/.config/agent-toolbox"
@@ -246,11 +246,14 @@ build_agent_image() {
         return 1
     fi
     
-    # 先确保基础镜像存在
+    # 先确保基础镜像存在，尝试从 ghcr.io 拉取
     if ! "$CONTAINER_ENGINE" image exists "$TOOLBOX_BASE_IMAGE" 2>/dev/null && \
        ! "$CONTAINER_ENGINE" images --format '{{.Repository}}:{{.Tag}}' | grep -q "^${TOOLBOX_BASE_IMAGE}$"; then
-        log_info "基础镜像不存在，先构建基础镜像..."
-        build_base_image || return 1
+        log_info "基础镜像不存在，尝试从 registry 拉取..."
+        if ! "$CONTAINER_ENGINE" pull "$TOOLBOX_BASE_IMAGE" 2>/dev/null; then
+            log_warn "拉取失败，尝试本地构建基础镜像..."
+            build_base_image || return 1
+        fi
     fi
     
     local image_name

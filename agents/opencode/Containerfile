@@ -1,5 +1,6 @@
 # OpenCode Agent Toolbox
-FROM localhost/toolbox-base:latest
+ARG BASE_IMAGE=ghcr.io/oliveagle/toolbox-opencode/toolbox-base:latest
+FROM ${BASE_IMAGE}
 
 LABEL agent="opencode"
 LABEL description="OpenCode AI coding agent toolbox"
