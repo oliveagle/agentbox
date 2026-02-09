@@ -63,15 +63,24 @@ clone_repo() {
 }
 
 install_toolbox() {
-    log_info "安装 agent-toolbox..."
-    
+    log_info "Installing agent-toolbox..."
+
     mkdir -p "$INSTALL_DIR"
     mkdir -p "$CONFIG_DIR"
-    
+
     cp "$REPO_DIR/agent-toolbox" "$INSTALL_DIR/"
     chmod +x "$INSTALL_DIR/agent-toolbox"
-    
-    log_success "安装完成: $INSTALL_DIR/agent-toolbox"
+
+    log_success "Installed: $INSTALL_DIR/agent-toolbox"
+}
+
+generate_wrappers() {
+    log_info "Generating agent wrapper scripts..."
+
+    export INSTALL_DIR="$INSTALL_DIR"
+    bash "$REPO_DIR/lib/generate-wrappers.sh"
+
+    log_success "Wrapper scripts generated"
 }
 
 check_path() {
@@ -111,12 +120,16 @@ build_images() {
 
 show_help() {
     echo
-    log_success "AI Agent Toolbox 安装成功！"
+    log_success "AI Agent Toolbox installation complete!"
     echo
-    echo "快速开始:"
+    echo "Quick start:"
     echo "  agent-toolbox agents"
     echo "  agent-toolbox create opencode ."
     echo "  agent-toolbox enter opencode ."
+    echo
+    echo "Or use shortcut commands:"
+    echo "  agent-toolbox-opencode ."
+    echo "  agent-toolbox-claude-code create"
     echo
 }
 
@@ -129,6 +142,7 @@ main() {
     check_dependencies
     clone_repo
     install_toolbox
+    generate_wrappers
     check_path
     
     read -p "是否立即构建镜像? [Y/n] " -n 1 -r
