@@ -1,187 +1,177 @@
-# OpenCode Toolbox
+# AI Agent Toolbox
 
-Toolbx 风格的容器化开发环境，专为 OpenCode AI 编程助手设计。
+多 AI Agent 容器管理工具，共享基础 OS 层，每个 Agent 独立隔离。
 
-## 特点
+## 架构
 
-- **默认使用 Podman**：优先使用 podman，无守护进程，更安全
-- **Git 配置自动挂载**：默认挂载 `~/.gitconfig`，保持 git 身份
-- **目录隔离**：不挂载整个 home 目录，每个 toolbox 有独立的 home
-- **项目级隔离**：只为特定项目创建容器，最小权限原则
-- **可选挂载**：SSH、Docker socket 等可选且默认关闭
+```
+┌─────────────────────────────────────────┐
+│          基础 OS 层 (toolbox-base)        │
+│  Ubuntu 24.04 + 开发工具链 + Node/Python/Go  │
+└─────────────────────────────────────────┘
+                   │
+    ┌──────────────┼──────────────┬──────────────┐
+    │              │              │              │
+┌───▼────┐    ┌───▼─────┐   ┌───▼────┐   ┌───▼──────┐
+│OpenCode│    │Claude   │   │  Kilo  │   │  Copilot │
+│ Agent  │    │  Code   │   │ Agent  │   │   CLI    │
+└────────┘    └─────────┘   └────────┘   └──────────┘
+```
+
+## 支持的 Agents
+
+| Agent | 名称 | 安装方式 |
+|-------|------|---------|
+| `opencode` | OpenCode AI | `npm install -g opencode-ai` |
+| `claude-code` | Claude Code | `npm install -g @anthropic-ai/claude-code` |
+| `kilo` | Kilo AI | `npm install -g kilo-ai` |
+| `copilot` | GitHub Copilot | `gh extension install github/copilot` |
+| `qwen` | Qwen AI | `pip3 install qwen-code` |
+| `codebuddy` | CodeBuddy | `npm install -g codebuddy-cli` |
 
 ## 安装
-
-### 一键安装（推荐）
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/oliveagle/toolbox-opencode/main/install.sh | bash
 ```
 
-安装完成后，重新加载 shell 配置：
-```bash
-source ~/.bashrc  # 或 ~/.zshrc
-```
-
-### 手动安装
-
-```bash
-# 克隆仓库
-git clone https://github.com/oliveagle/toolbox-opencode.git
-cd toolbox-opencode
-
-# 安装到 PATH
-sudo cp opencode-toolbox /usr/local/bin/
-sudo chmod +x /usr/local/bin/opencode-toolbox
-
-# 或者本地安装
-mkdir -p ~/.local/bin
-cp opencode-toolbox ~/.local/bin/
-```
-
 ## 快速开始
 
 ```bash
-# 进入项目目录
-cd ~/my-project
+# 1. 查看可用 Agents
+agent-toolbox agents
 
-# 创建 toolbox（使用当前目录名）
-opencode-toolbox create .
+# 2. 创建 OpenCode toolbox
+agent-toolbox create opencode .
 
-# 进入 toolbox
-opencode-toolbox enter .
-⬢ $ opencode
+# 3. 进入 toolbox
+agent-toolbox enter opencode .
+⬢ opencode:~$ opencode
 
-# 直接运行 opencode
-opencode-toolbox run .
+# 4. 创建 Claude Code toolbox（另一个项目）
+agent-toolbox create claude-code another-project
+agent-toolbox enter claude-code another-project
+⬢ claude-code:~$ claude
 ```
 
 ## 命令
 
 | 命令 | 说明 |
 |------|------|
-| `create [名称\|路径]` | 创建新的 toolbox |
-| `enter [名称\|路径]` | 进入交互式 shell |
-| `run <名称> [命令]` | 运行命令（默认 `opencode`） |
+| `agents` | 列出可用 Agents |
+| `create <agent> [project]` | 创建 toolbox |
+| `enter <agent> [project]` | 进入交互式 shell |
+| `run <agent> [project] [cmd]` | 运行命令 |
 | `list` | 列出所有 toolbox |
-| `rm <名称>` | 删除 toolbox |
-| `build` | 构建 toolbox 镜像 |
+| `rm <agent> [project]` | 删除 toolbox |
+| `build <agent>` | 构建 Agent 镜像 |
+| `build-all` | 构建所有镜像 |
 
-## 隔离设计
+## 使用示例
 
-### 挂载策略
+```bash
+# OpenCode 示例
+cd ~/project1
+agent-toolbox create opencode .
+agent-toolbox enter opencode .
 
-**默认挂载（安全）**：
-- ✅ 项目目录（只挂载你指定的目录）
-- ✅ Git 配置（`~/.gitconfig`，用于保持 git 身份）
-- ✅ 系统时区（只读）
-- ✅ X11/Wayland 显示（用于 GUI 应用）
+# Claude Code 示例
+agent-toolbox create claude-code project2
+agent-toolbox run claude-code project2
 
-**可选挂载（需显式开启）**：
-- ⭕ SSH keys（`~/.ssh`）
-- ⭕ Docker/Podman socket
-- ⭕ 其他自定义目录
+# 直接运行命令
+agent-toolbox run opencode . git status
+agent-toolbox run claude-code myproject npm test
+```
 
-**不挂载（隔离）**：
-- ❌ 整个 home 目录
-- ❌ 系统配置文件
-- ❌ 主机环境变量
-
-### 独立 Home 目录
-
-每个 toolbox 有完全独立的 home 目录：
+## 目录结构
 
 ```
-~/.local/share/opencode-toolbox/
-├── myproject/          # toolbox "myproject" 的 home
-│   ├── .npm-global/    # npm 全局安装
-│   ├── .gitconfig      # 容器内的 git 配置
-│   └── ...
-└── another-project/    # 另一个 toolbox
+~/.local/share/agent-toolbox/
+├── repo/                    # 工具脚本
+├── opencode/
+│   ├── project1/           # OpenCode project1 的 home
+│   └── project2/           # OpenCode project2 的 home
+├── claude-code/
+│   └── myproject/          # Claude Code myproject 的 home
+└── kilo/
+    └── another/            # Kilo another 的 home
 ```
 
 ## 配置
 
-配置文件：`~/.config/opencode-toolbox/config.yaml`
+配置文件：`~/.config/agent-toolbox/agents.yaml`
 
 ```yaml
-# 默认镜像
-default_image: localhost/opencode-toolbox:latest
+default_agent: opencode
 
-# 默认使用 podman
-engine: podman
+agents:
+  opencode:
+    name: OpenCode
+    image: localhost/toolbox-agent-opencode:latest
+    cmd: opencode
+    config_dir: ~/.config/opencode
 
-defaults:
-  # 是否挂载 SSH keys（默认 false）
-  mount_ssh: false
-  
-  # 是否挂载 Git 配置（默认 true）
-  mount_gitconfig: true
-  
-  # 是否挂载 Docker/Podman socket（默认 false）
-  mount_docker: false
-  
-  # X11/Wayland 支持（默认 true）
-  mount_display: true
-
-# 全局环境变量
-global_env:
-  EDITOR: vim
-  TZ: Asia/Shanghai
+mounts:
+  agent_config: true   # 挂载 Agent 配置
+  gitconfig: true      # 挂载 Git 配置
+  ssh: false          # 不挂载 SSH（可选）
+  docker: false       # 不挂载 Docker（可选）
 ```
 
-## 工作流程
+## 镜像层级
 
+1. **基础层** (`toolbox-base`): Ubuntu + 开发环境
+2. **Agent 层** (`toolbox-agent-*`): 基础层 + 特定 Agent
+
+构建顺序：
 ```bash
-# 1. 进入项目目录
-cd ~/projects/web-app
-
-# 2. 创建 toolbox（第一次）
-opencode-toolbox create .
-
-# 3. 日常使用 - 进入 toolbox
-opencode-toolbox enter .
-⬢ [toolbox-web-app] $ opencode
-
-# 4. 或者直接在 toolbox 中运行命令
-opencode-toolbox run . npm test
-opencode-toolbox run . git status
-
-# 5. 查看所有 toolbox
-opencode-toolbox list
-
-# 6. 删除不再使用的 toolbox
-opencode-toolbox rm web-app
+agent-toolbox build-all
+# 或单独构建
+agent-toolbox build opencode
+agent-toolbox build claude-code
 ```
 
-## 与 Toolbx 的区别
+## 添加新 Agent
 
-| 特性 | Toolbx | OpenCode Toolbox |
-|------|--------|------------------|
-| 默认引擎 | Podman | Podman |
-| home 目录 | 挂载主机 home | 独立隔离 home |
-| 项目隔离 | 一个 toolbox 通用 | 按项目创建 |
-| Git 配置 | 自动同步 | 默认挂载 |
-| SSH keys | 自动挂载 | 可选，默认关闭 |
-| 目标场景 | 系统故障排查 | AI 编程开发 |
+1. 创建 `agents/<name>/Containerfile`:
+```dockerfile
+FROM localhost/toolbox-base:latest
+
+LABEL agent="myagent"
+
+# 安装你的 agent
+RUN npm install -g my-agent-cli
+
+ENV AGENT_NAME=myagent
+ENV AGENT_CMD=myagent
+```
+
+2. 更新配置 `~/.config/agent-toolbox/agents.yaml`
+
+3. 构建镜像：
+```bash
+agent-toolbox build myagent
+```
 
 ## 文件结构
 
 ```
 toolbox-opencode/
-├── opencode-toolbox      # 主脚本
-├── install.sh            # 安装脚本
-├── Containerfile         # 容器镜像定义
-├── config.yaml          # 默认配置
-└── README.md            # 本文档
+├── agent-toolbox              # 主脚本
+├── install.sh                 # 安装脚本
+├── images/
+│   └── Containerfile.base     # 基础镜像
+├── agents/
+│   ├── opencode/
+│   │   └── Containerfile
+│   ├── claude-code/
+│   │   └── Containerfile
+│   ├── kilo/
+│   │   └── Containerfile
+│   └── ...
+└── README.md
 ```
-
-## 系统要求
-
-- Linux 系统
-- Podman (推荐) 或 Docker
-- 4GB+ 内存
-- 10GB+ 磁盘空间
 
 ## License
 

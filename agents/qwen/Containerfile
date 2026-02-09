@@ -1,0 +1,18 @@
+# Qwen Agent Toolbox
+FROM localhost/toolbox-base:latest
+
+LABEL agent="qwen"
+LABEL description="Qwen AI coding agent toolbox"
+
+# Qwen Code 通常通过 pip 安装
+RUN pip3 install qwen-code 2>/dev/null || \
+    pip3 install qwen-agent 2>/dev/null || \
+    echo "Qwen 需要手动安装: pip3 install qwen-code"
+
+RUN mkdir -p /home/toolboxuser/.config/qwen && \
+    chown -R toolboxuser:toolboxuser /home/toolboxuser/.config
+
+ENV AGENT_NAME=qwen
+ENV AGENT_CMD=qwen
+
+CMD ["/bin/bash"]

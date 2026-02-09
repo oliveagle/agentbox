@@ -1,0 +1,18 @@
+# CodeBuddy Agent Toolbox
+FROM localhost/toolbox-base:latest
+
+LABEL agent="codebuddy"
+LABEL description="CodeBuddy AI coding agent toolbox"
+
+# CodeBuddy 通常通过 npm 安装
+RUN npm install -g codebuddy-cli 2>/dev/null || \
+    npm install -g @codebuddy/cli 2>/dev/null || \
+    echo "CodeBuddy 需要手动安装"
+
+RUN mkdir -p /home/toolboxuser/.config/codebuddy && \
+    chown -R toolboxuser:toolboxuser /home/toolboxuser/.config
+
+ENV AGENT_NAME=codebuddy
+ENV AGENT_CMD=codebuddy
+
+CMD ["/bin/bash"]
