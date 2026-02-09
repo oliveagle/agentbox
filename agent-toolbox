@@ -71,11 +71,11 @@ normalize_name() {
     echo "$input"
 }
 
-# 生成容器名称
+# Generate container name
 generate_container_name() {
     local agent="$1"
     local project="$2"
-    echo "toolbox-${agent}-${project}"
+    echo "agentbox-${agent}-${project}"
 }
 
 # 生成镜像名称
@@ -681,21 +681,22 @@ remove_toolbox() {
     local container_name
     container_name=$(generate_container_name "$agent" "$project_name")
     
-    log_warn "删除 toolbox: $container_name"
-    
+    log_warn "Removing toolbox: $container_name"
+
     if "$CONTAINER_ENGINE" ps -a --format '{{.Names}}' | grep -q "^${container_name}$"; then
         "$CONTAINER_ENGINE" rm -f "$container_name" 2>/dev/null
-        log_success "容器已删除"
+        log_success "Container removed"
     fi
-    
-    # 询问是否删除 home 目录
-    local toolbox_home="${HOST_HOME}/.local/share/agent-toolbox/${agent}/${project_name}"
+
+    # Ask to delete home directory
+    local host_home="${HOST_HOME:-$(getent passwd "$HOST_USER" | cut -d: -f6)}"
+    local toolbox_home="${host_home}/.local/share/agent-toolbox/${agent}/${project_name}"
     if [[ -d "$toolbox_home" ]]; then
-        read -p "删除隔离 home 目录? [y/N] " -n 1 -r
+        read -p "Delete isolated home directory? [y/N] " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             rm -rf "$toolbox_home"
-            log_success "隔离 home 已删除"
+            log_success "Isolated home removed"
         fi
     fi
 }
