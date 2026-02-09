@@ -61,10 +61,10 @@ After installation, shortcut commands are generated for each agent:
 ```bash
 # Available shortcuts:
 agent-toolbox-opencode     # OpenCode
-agent-toolbox-claude-code  # Claude Code
-agent-toolbox-kilo         # Kilo
-agent-toolbox-copilot      # GitHub Copilot
-agent-toolbox-qwen         # Qwen
+agent-toolbox-claude      # Claude Code
+agent-toolbox-kilo        # Kilo
+agent-toolbox-copilot     # GitHub Copilot
+agent-toolbox-qwen        # Qwen
 agent-toolbox-codebuddy    # CodeBuddy
 ```
 
