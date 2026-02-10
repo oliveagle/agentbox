@@ -123,7 +123,7 @@ build_images() {
         if [[ -f "$REPO_DIR/agents/$agent/Containerfile" ]]; then
             log_info "构建 $agent..."
             cd "$REPO_DIR/agents/$agent"
-            podman build "${build_args[@]}" -t "localhost/agentbox-agent-${agent}:latest" -f Containerfile . || log_warn "$agent 构建失败"
+            podman build "${build_args[@]}" -t "localhost/agentbox-${agent}:latest" -f Containerfile . || log_warn "$agent 构建失败"
         fi
     done
 
