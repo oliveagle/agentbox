@@ -80,72 +80,6 @@ for config_path in \
     fi
 done
 
-# 创建软链接：如果配置目录存在于 ${HOME} 但不在实际用户的 home 中
-# 这解决了容器内 ubuntu 用户访问 ${HOME}/.claude 等目录的问题
-link_configs_to_real_home() {
-    local real_home="${HOME}"
-    local configs=(
-        ".claude"
-        ".config/opencode"
-        ".config/claude"
-        ".config/kilo"
-        ".config/codebuddy"
-        ".config/gh"
-        ".config/qwen"
-    )
-
-    # 只有当实际用户的 home 不是 agentbox home 时才需要链接
-    if [[ "$HOME" != "$real_home" && -d "$real_home" ]]; then
-        for config in "${configs[@]}"; do
-            local source="$real_home/$config"
-            local target="$HOME/$config"
-
-            # 源目录存在才处理
-            [[ -e "$source" ]] || continue
-
-            # 如果目标已经是符号链接，跳过
-            [[ -L "$target" ]] && continue
-
-            # 如果目标存在但不是符号链接，先删除
-            if [[ -e "$target" ]]; then
-                log_info "Removing existing: $target"
-                rm -rf "$target" 2>/dev/null || true
-            fi
-
-            # 创建父目录和符号链接
-            mkdir -p "$(dirname "$target")"
-            log_info "Creating symlink: $target -> $source"
-            ln -s "$source" "$target"
-        done
-    fi
-
-    # 链接 .config 下的目录（如果存在）
-    if [[ "$HOME" != "$real_home" && -d "$real_home/.config" ]]; then
-        for config_dir in "opencode" "claude" "kilo" "codebuddy" "gh" "qwen"; do
-            local source="$real_home/.config/$config_dir"
-            local target="$HOME/.config/$config_dir"
-
-            # 源目录存在才处理
-            [[ -e "$source" ]] || continue
-
-            # 如果目标已经是符号链接，跳过
-            [[ -L "$target" ]] && continue
-
-            # 如果目标存在但不是符号链接，先删除
-            if [[ -e "$target" ]]; then
-                log_info "Removing existing directory: $target"
-                rm -rf "$target" 2>/dev/null || true
-            fi
-
-            # 创建符号链接
-            log_info "Creating symlink: $target -> $source"
-            ln -s "$source" "$target"
-        done
-    fi
-}
-
-link_configs_to_real_home
-
 # 导出 Claude/OpenCode 配置环境变量到全局环境
 claude_settings="${HOME}/.claude/settings.json"
 if [[ -f "$claude_settings" ]]; then
@@ -160,23 +94,52 @@ if [[ -f "$claude_settings" ]]; then
         fi
     fi
 fi
+    fi
+fi
 
 if [[ -n "${AGENTBOX_HOME:-}" && -d "$AGENTBOX_HOME" ]]; then
     log_info "Setting up AGENTBOX_HOME: $AGENTBOX_HOME"
     chown -R "${HOST_UID}:${HOST_GID}" "$AGENTBOX_HOME" 2>/dev/null || true
 fi
 
-if [[ ! -d "$HOME/.ssh" ]]; then
-    mkdir -p "$HOME/.ssh"
-    chmod 700 "$HOME/.ssh"
-fi
-chown "${HOST_UID}:${HOST_GID}" "$HOME/.ssh" 2>/dev/null || true
+# 创建配置目录的符号链接（将挂载的 config 链接到预期位置）
+create_config_symlinks() {
+    local config_link="$1"
+    local config_target="$2"
 
+    if [[ -d "$config_target" && ! -e "$config_link" ]]; then
+        ln -s "$config_target" "$config_link" 2>/dev/null || true
+        log_info "Created symlink: $config_link -> $config_target"
+    fi
+}
+
+# 首先确保 .config 目录存在
 if [[ ! -d "$HOME/.config" ]]; then
     mkdir -p "$HOME/.config"
     chmod 755 "$HOME/.config"
 fi
 chown "${HOST_UID}:${HOST_GID}" "$HOME/.config" 2>/dev/null || true
+
+# 为 agent configs 创建符号链接（从挂载的隐藏目录到预期位置）
+# opencode config 挂载到 .opencode-config，需要链接到 .config/opencode
+if [[ -d "$HOME/.opencode-config" ]]; then
+    # 如果 .config/opencode 不存在，删除旧的符号链接并创建新的
+    if [[ ! -e "$HOME/.config/opencode" ]]; then
+        rm -f "$HOME/.config/opencode" 2>/dev/null || true
+        ln -s "$HOME/.opencode-config" "$HOME/.config/opencode" 2>/dev/null || true
+        log_info "Created symlink: $HOME/.config/opencode -> $HOME/.opencode-config"
+    fi
+fi
+
+if [[ -d "$HOME/.claude" ]]; then
+    # .claude 已经是正确位置，不需要 symlink
+    true
+fi
+
+if [[ -d "$HOME/.ssh" ]]; then
+    chmod 700 "$HOME/.ssh" 2>/dev/null || true
+fi
+chown "${HOST_UID}:${HOST_GID}" "$HOME/.ssh" 2>/dev/null || true
 
 # 修复 ${HOME} 目录的所有权（如果容器以 root 运行）
 if [[ $EUID -eq 0 && -d "${HOME}" ]]; then

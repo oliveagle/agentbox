@@ -226,15 +226,28 @@ get_agent_config() {
     fi
 }
 
-# Parse agent config for list of values (for multiple config_dirs)
+# Parse agent config for list of values (supports YAML arrays)
 get_agent_config_list() {
     local agent="$1"
     local key="$2"
     local config_file="$CONFIG_DIR/agents.yaml"
     
     if [[ -f "$config_file" ]]; then
-        grep -A 20 "^  ${agent}:" "$config_file" 2>/dev/null | \
-        grep "^    ${key}:" | sed "s/^    ${key}:\s*//" | tr -d '"' | tr -d ' '
+        # First check if it's a YAML array (multi-line format)
+        local block=$(grep -A 20 "^  ${agent}:" "$config_file" 2>/dev/null)
+        
+        # Check if the key starts a YAML array (next line starts with "- ")
+        local key_line=$(echo "$block" | grep -n "^    ${key}:" | head -1 | cut -d: -f1)
+        if [[ -n "$key_line" ]]; then
+            local next_line=$((key_line + 1))
+            local array_content=$(echo "$block" | tail -n +$next_line)
+
+            # Extract all items from the YAML array (match lines with "- " at any indentation)
+            echo "$array_content" | grep -E "^\s*- " | sed 's/^\s*- //' | tr -d '"' | xargs
+        else
+            # Fallback to comma-separated single-line format
+            echo "$block" | grep "^    ${key}:" | sed "s/^    ${key}:\s*//" | tr -d '"' | tr -d ' '
+        fi
     else
         echo ""
     fi
@@ -398,9 +411,13 @@ list_agents() {
 generate_mount_args() {
     local agent="$1"
     local project_path="${2:-}"
+    local agentbox_home="${3:-}"
     local mount_args=()
     
     get_user_info
+    
+    # 如果没有提供 agentbox_home，使用默认值
+    [[ -z "$agentbox_home" ]] && agentbox_home="${HOST_HOME}/.local/share/agentbox/${agent}/${project_name:-default}"
     
     # 基础挂载
     mount_args+=(--volume /etc/localtime:/etc/localtime:ro)
@@ -411,21 +428,21 @@ generate_mount_args() {
     mkdir -p "$cache_dir"
     mount_args+=(--volume "${cache_dir}:/tmp/agent-cache")
     
-    # Agent 配置（必须挂载）- 支持多个配置目录
-    # 挂载到容器内的正确位置
+    # Agent 配置（必须挂载）- 直接挂载到隔离 HOME
+    # 不再创建符号链接，直接挂载到容器的隔离 home
     local mount_agent_config
     mount_agent_config=$(get_global_config "agent_config")
     if [[ "${mount_agent_config:-true}" == "true" ]]; then
-        # 首先检查 config_dirs（逗号分隔），回退到 config_dir
+        # 首先检查 config_dirs（数组），回退到 config_dir
         local agent_config_dirs_raw
-        agent_config_dirs_raw=$(get_agent_config "$agent" "config_dirs")
+        agent_config_dirs_raw=$(get_agent_config_list "$agent" "config_dirs")
         if [[ -z "$agent_config_dirs_raw" ]]; then
             agent_config_dirs_raw=$(get_agent_config "$agent" "config_dir")
         fi
 
         if [[ -n "$agent_config_dirs_raw" ]]; then
-            # 支持逗号分隔的多个目录
-            IFS=',' read -ra dirs <<< "$agent_config_dirs_raw"
+            # 支持空格分隔的多个目录
+            IFS=' ' read -ra dirs <<< "$agent_config_dirs_raw"
             for agent_config_dir in "${dirs[@]}"; do
                 # 去除空格
                 agent_config_dir=$(echo "$agent_config_dir" | xargs)
@@ -437,8 +454,30 @@ generate_mount_args() {
                 fi
 
                 if [[ -d "$agent_config_dir" ]]; then
-                    # 挂载到容器内的对应位置（保持原路径结构）
-                    mount_args+=(--volume "${agent_config_dir}:${agent_config_dir}:rw")
+                    # 获取配置目录名（如 .claude, opencode）
+                    local config_name
+                    config_name=$(basename "$agent_config_dir")
+
+                    # 使用独特名称避免与预创建目录冲突（如 .claude, .opencode-config）
+                    # 以 . 开头使隐藏，放在 $HOME 下
+                    # 注意：config_name 可能以 . 开头（如 .claude）
+                    local container_config_dir
+                    if [[ "$config_name" == "opencode" ]]; then
+                        container_config_dir=".opencode-config"
+                    elif [[ "$config_name" == ".claude" ]]; then
+                        container_config_dir=".claude"
+                    elif [[ "$config_name" == ".config" ]]; then
+                        container_config_dir=".config"
+                    else
+                        # 对于其他目录，添加 . 前缀（如 opencode → .opencode-config）
+                        container_config_dir=".${config_name}-config"
+                    fi
+
+                    # 计算容器内的目标路径（挂载到隔离 HOME 下）
+                    local container_dest="${agentbox_home}/${container_config_dir}"
+
+                    # 直接挂载到隔离 HOME，不创建符号链接
+                    mount_args+=(--volume "${agent_config_dir}:${container_dest}:rw")
                 fi
             done
         fi
@@ -540,13 +579,13 @@ create_agentbox() {
         build_agent_image "$agent" || return 1
     fi
     
-    # 准备挂载参数
-    local mount_args
-    mount_args=$(generate_mount_args "$agent" "$(pwd)")
-    
     # 准备 agentbox home
     local agentbox_home="${HOST_HOME}/.local/share/agentbox/${agent}/${project_name}"
     mkdir -p "$agentbox_home"
+    
+    # 准备挂载参数（传入 agentbox_home，直接挂载到隔离 HOME）
+    local mount_args
+    mount_args=$(generate_mount_args "$agent" "$(pwd)" "$agentbox_home")
     
     # 引擎参数
     local engine_args=()
@@ -608,47 +647,8 @@ create_agentbox() {
         fi
     " 2>/dev/null || true
 
-    # 创建配置目录符号链接（让 agent 能找到配置）
-    create_config_symlinks "$container_name" "$agent" "$agentbox_home"
-    
     log_success "Agentbox 创建成功: $container_name"
     log_info "进入: agentbox enter $agent $project_name"
-}
-
-# 创建配置目录符号链接
-create_config_symlinks() {
-    local container_name="$1"
-    local agent="$2"
-    local agentbox_home="$3"
-
-    get_user_info
-
-    # OCC agent 需要同时链接 opencode 和 claude 配置
-    local config_dirs=()
-    if [[ "$agent" == "occ" ]]; then
-        config_dirs=("opencode" "claude")
-    else
-        # 从配置中获取 config_dir
-        local config_dirs_raw
-        config_dirs_raw=$(get_agent_config_list "$agent" "config_dir")
-        while IFS= read -r dir; do
-            [[ -n "$dir" ]] && config_dirs+=$(basename "$dir")
-        done <<< "$config_dirs_raw"
-    fi
-
-    for config_name in "${config_dirs[@]}"; do
-        [[ -z "$config_name" ]] && continue
-        local src_path="${HOST_HOME}/.config/${config_name}"
-        if [[ -d "$src_path" ]]; then
-            "$CONTAINER_ENGINE" exec "$container_name" bash -c "
-                mkdir -p ${agentbox_home}/.config
-                if [[ ! -e \"${agentbox_home}/.config/${config_name}\" && ! -L \"${agentbox_home}/.config/${config_name}\" ]]; then
-                    ln -s \"${src_path}\" \"${agentbox_home}/.config/${config_name}\"
-                    echo 'Linked ${agentbox_home}/.config/${config_name} -> ${src_path}'
-                fi
-            " 2>/dev/null || true
-        fi
-    done
 }
 
 # 设置容器用户
