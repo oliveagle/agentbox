@@ -8,7 +8,7 @@ agents:
   occ:
     name: OCC
     description: OpenCode + Claude Code combined
-    image: localhost/toolbox-agent-occ:latest
+    image: localhost/agentbox-occ:latest
     cmd: claude
     config_dirs: ~/.claude,~/.config/opencode
 

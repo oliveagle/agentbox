@@ -14,9 +14,9 @@ RUN curl -fsSL https://claude.ai/install | bash || \
     echo "Claude Code requires manual install: npm install -g @anthropic-ai/claude-code"
 
 # Create config directories
-RUN mkdir -p /home/oliveagle/.config/opencode && \
-    mkdir -p /home/oliveagle/.config/claude && \
-    chown -R oliveagle:oliveagle /home/oliveagle/.config
+RUN mkdir -p /home/toolboxuser/.config/opencode && \
+    mkdir -p /home/toolboxuser/.config/claude && \
+    chown -R toolboxuser:toolboxuser /home/toolboxuser/.config
 
 # Install common tools for both agents
 RUN apt-get update && apt-get install -y \

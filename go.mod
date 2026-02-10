@@ -1,4 +1,4 @@
-module github.com/oliveagle/toolbox-opencode
+module github.com/oliveagle/agentbox
 
 go 1.21
 

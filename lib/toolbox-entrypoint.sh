@@ -80,10 +80,10 @@ for config_path in \
     fi
 done
 
-# 创建软链接：如果配置目录存在于 /home/oliveagle 但不在实际用户的 home 中
-# 这解决了容器内 ubuntu 用户访问 /home/oliveagle/.claude 等目录的问题
+# 创建软链接：如果配置目录存在于 ${HOME} 但不在实际用户的 home 中
+# 这解决了容器内 ubuntu 用户访问 ${HOME}/.claude 等目录的问题
 link_configs_to_real_home() {
-    local real_home="/home/oliveagle"
+    local real_home="${HOME}"
     local configs=(
         ".claude"
         ".config/opencode"
@@ -147,7 +147,7 @@ link_configs_to_real_home() {
 link_configs_to_real_home
 
 # 导出 Claude/OpenCode 配置环境变量到全局环境
-claude_settings="/home/oliveagle/.claude/settings.json"
+claude_settings="${HOME}/.claude/settings.json"
 if [[ -f "$claude_settings" ]]; then
     # 读取 settings.json 中的 env 部分并导出
     if command -v jq >/dev/null 2>&1; then
@@ -178,10 +178,10 @@ if [[ ! -d "$HOME/.config" ]]; then
 fi
 chown "${HOST_UID}:${HOST_GID}" "$HOME/.config" 2>/dev/null || true
 
-# 修复 /home/oliveagle 目录的所有权（如果容器以 root 运行）
-if [[ $EUID -eq 0 && -d "/home/oliveagle" ]]; then
-    chown -R "${HOST_UID}:${HOST_GID}" "/home/oliveagle" 2>/dev/null || true
-    log_info "Fixed /home/oliveagle ownership to ${HOST_USER}:${HOST_USER}"
+# 修复 ${HOME} 目录的所有权（如果容器以 root 运行）
+if [[ $EUID -eq 0 && -d "${HOME}" ]]; then
+    chown -R "${HOST_UID}:${HOST_GID}" "${HOME}" 2>/dev/null || true
+    log_info "Fixed ${HOME} ownership to ${HOST_USER}:${HOST_USER}"
 fi
 
 log_info "Toolbox initialization complete"

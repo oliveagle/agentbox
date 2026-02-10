@@ -1,4 +1,4 @@
-# OpenCode Toolbox 配置
+# Agentbox 配置
 #
 # 安全隔离原则：
 # - 默认不挂载整个 home 目录
@@ -7,7 +7,7 @@
 # - 提供独立的 toolbox home 目录
 
 # 默认镜像
-default_image: localhost/opencode-toolbox:latest
+default_image: localhost/agentbox:latest
 
 # 容器引擎: docker, podman, auto
 engine: podman

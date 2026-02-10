@@ -7,10 +7,10 @@
 set -euo pipefail
 
 # 基础配置
-TOOLBOX_BASE_IMAGE="${TOOLBOX_BASE_IMAGE:-ghcr.io/oliveagle/toolbox-opencode/toolbox-base:latest}"
+TOOLBOX_BASE_IMAGE="${TOOLBOX_BASE_IMAGE:-ghcr.io/oliveagle/agentbox/toolbox-base:latest}"
 CONTAINER_ENGINE="${CONTAINER_ENGINE:-podman}"
-INSTALL_DIR="${INSTALL_DIR:-${HOME}/.local/share/agent-toolbox}"
-CONFIG_DIR="${HOME}/.config/agent-toolbox"
+INSTALL_DIR="${INSTALL_DIR:-${HOME}/.local/share/agentbox}"
+CONFIG_DIR="${HOME}/.config/agentbox"
 
 # 颜色
 RED='\033[0;31m'
@@ -81,7 +81,7 @@ generate_container_name() {
 # 生成镜像名称
 generate_image_name() {
     local agent="$1"
-    echo "localhost/toolbox-agent-${agent}:latest"
+    echo "localhost/agentbox-${agent}:latest"
 }
 
 # 获取脚本所在目录
@@ -407,7 +407,7 @@ generate_mount_args() {
     mount_args+=(--volume /tmp:/tmp)
     
     # 共享缓存
-    local cache_dir="${HOST_HOME}/.cache/agent-toolbox"
+    local cache_dir="${HOST_HOME}/.cache/agentbox"
     mkdir -p "$cache_dir"
     mount_args+=(--volume "${cache_dir}:/tmp/agent-cache")
     
@@ -545,7 +545,7 @@ create_toolbox() {
     mount_args=$(generate_mount_args "$agent" "$(pwd)")
     
     # 准备 toolbox home
-    local toolbox_home="${HOST_HOME}/.local/share/agent-toolbox/${agent}/${project_name}"
+    local toolbox_home="${HOST_HOME}/.local/share/agentbox/${agent}/${project_name}"
     mkdir -p "$toolbox_home"
     
     # 引擎参数
@@ -612,7 +612,7 @@ create_toolbox() {
     create_config_symlinks "$container_name" "$agent" "$toolbox_home"
     
     log_success "Toolbox 创建成功: $container_name"
-    log_info "进入: agent-toolbox enter $agent $project_name"
+    log_info "进入: agentbox enter $agent $project_name"
 }
 
 # 创建配置目录符号链接
@@ -705,7 +705,7 @@ enter_toolbox() {
     
     get_user_info
     
-    local toolbox_home="${HOST_HOME}/.local/share/agent-toolbox/${agent}/${project_name}"
+    local toolbox_home="${HOST_HOME}/.local/share/agentbox/${agent}/${project_name}"
     local agent_name
     agent_name=$(get_agent_config "$agent" "name")
     
@@ -743,7 +743,7 @@ run_toolbox() {
     
     if [[ -z "$agent" || "$agent" == --* ]]; then
         log_error "需要指定 Agent 名称"
-        echo "用法: agent-toolbox run <agent> [命令]"
+        echo "用法: agentbox run <agent> [命令]"
         return 1
     fi
     
@@ -769,14 +769,14 @@ run_toolbox() {
         if "$CONTAINER_ENGINE" ps -a --format '{{.Names}}' | grep -q "^${container_name}$"; then
             "$CONTAINER_ENGINE" start "$container_name" > /dev/null
         else
-            log_error "容器不存在，先创建: agent-toolbox create $agent $project_name"
+            log_error "容器不存在，先创建: agentbox create $agent $project_name"
             return 1
         fi
     fi
     
     get_user_info
     
-    local toolbox_home="${HOST_HOME}/.local/share/agent-toolbox/${agent}/${project_name}"
+    local toolbox_home="${HOST_HOME}/.local/share/agentbox/${agent}/${project_name}"
     
     # 如果没有命令，使用 agent 默认命令
     if [[ ${#cmd_args[@]} -eq 0 ]]; then
@@ -826,7 +826,7 @@ list_toolboxes() {
     echo
 
     # 显示存储使用情况
-    local toolbox_base="${HOST_HOME}/.local/share/agent-toolbox"
+    local toolbox_base="${HOST_HOME}/.local/share/agentbox"
     if [[ -d "$toolbox_base" ]]; then
         log_info "存储使用情况:"
         du -sh "${toolbox_base}"/* 2>/dev/null | while read -r size path; do
@@ -844,7 +844,7 @@ remove_toolbox() {
 
     if [[ -z "$agent" ]]; then
         log_error "需要指定 Agent 名称"
-        echo "用法: agent-toolbox rm <agent> [project-name]"
+        echo "用法: agentbox rm <agent> [project-name]"
         return 1
     fi
 
@@ -862,7 +862,7 @@ remove_toolbox() {
 
     # Ask to delete home directory
     local host_home="${HOST_HOME:-$(getent passwd "${HOST_USER:-$USER}" | cut -d: -f6)}"
-    local toolbox_home="${host_home}/.local/share/agent-toolbox/${agent}/${project_name}"
+    local toolbox_home="${host_home}/.local/share/agentbox/${agent}/${project_name}"
     if [[ -d "$toolbox_home" ]]; then
         read -p "Delete isolated home directory? [y/N] " -n 1 -r
         echo
@@ -880,7 +880,7 @@ kill_toolbox() {
 
     if [[ -z "$agent" ]]; then
         log_error "需要指定 Agent 名称"
-        echo "用法: agent-toolbox kill <agent> [project-name]"
+        echo "用法: agentbox kill <agent> [project-name]"
         return 1
     fi
 
@@ -905,15 +905,15 @@ show_help() {
 AI Agent Toolbox - 多 Agent 容器管理工具
 
 用法:
-  agent-toolbox agents                          列出可用 Agents
-  agent-toolbox create <agent> [project]        创建 toolbox
-  agent-toolbox enter <agent> [project]         进入 toolbox
-  agent-toolbox run <agent> [project] [cmd]     运行命令
-  agent-toolbox list                            列出所有 toolbox
-  agent-toolbox kill <agent> [project]          停止 toolbox
-  agent-toolbox rm <agent> [project]            删除 toolbox
-  agent-toolbox build <agent>                   构建 Agent 镜像
-  agent-toolbox build-all                       构建所有 Agent 镜像
+  agentbox agents                          列出可用 Agents
+  agentbox create <agent> [project]        创建 toolbox
+  agentbox enter <agent> [project]         进入 toolbox
+  agentbox run <agent> [project] [cmd]     运行命令
+  agentbox list                            列出所有 toolbox
+  agentbox kill <agent> [project]          停止 toolbox
+  agentbox rm <agent> [project]            删除 toolbox
+  agentbox build <agent>                   构建 Agent 镜像
+  agentbox build-all                       构建所有 Agent 镜像
 
 Agents:
   occ             OpenCode + Claude Code (Recommended)
@@ -926,21 +926,21 @@ Agents:
 
 示例:
   # 创建 OCC toolbox（推荐）
-  agent-toolbox create occ .
-  agent-toolbox enter occ .
+  agentbox create occ .
+  agentbox enter occ .
 
   # 创建 OpenCode toolbox
-  agent-toolbox create opencode .
-  agent-toolbox enter opencode .
+  agentbox create opencode .
+  agentbox enter opencode .
 
   # 创建 Claude toolbox
-  agent-toolbox create claude myproject
-  agent-toolbox run claude myproject
+  agentbox create claude myproject
+  agentbox run claude myproject
 
   # 构建所有镜像
-  agent-toolbox build-all
+  agentbox build-all
 
-配置: ~/.config/agent-toolbox/agents.yaml
+配置: ~/.config/agentbox/agents.yaml
 
 EOF
 }

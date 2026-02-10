@@ -6,7 +6,7 @@ Multi-AI Agent container management tool with shared base OS layer and isolated 
 
 - **Shared Base OS**: Ubuntu 24.04 + common dev tools
 - **Agent Isolation**: Each agent runs in its own container with isolated home
-- **SSH Keys**: Dedicated SSH key pair for agentbox in `~/.config/agent-toolbox/ssh/`
+- **SSH Keys**: Dedicated SSH key pair for agentbox in `~/.config/agentbox/ssh/`
 - **Wrapper Scripts**: Shortcut commands for quick access
 - **OCC Agent**: Combined OpenCode + Claude Code agent
 
@@ -41,25 +41,25 @@ Multi-AI Agent container management tool with shared base OS layer and isolated 
 ## 安装
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/oliveagle/toolbox-opencode/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/oliveagle/agentbox/main/install.sh | bash
 ```
 
 ## Quick Start
 
 ```bash
 # 1. List available agents
-agent-toolbox agents
+agentbox agents
 
 # 2. Create OpenCode toolbox
-agent-toolbox create opencode .
+agentbox create opencode .
 
 # 3. Enter toolbox
-agent-toolbox enter opencode .
+agentbox enter opencode .
 ⬢ opencode:~$ opencode
 
 # 4. Create Claude Code toolbox (another project)
-agent-toolbox create claude-code another-project
-agent-toolbox enter claude-code another-project
+agentbox create claude-code another-project
+agentbox enter claude-code another-project
 ⬢ claude-code:~$ claude
 ```
 
@@ -69,35 +69,35 @@ After installation, shortcut commands are generated for each agent:
 
 ```bash
 # Available shortcuts:
-agent-toolbox-occ         # OpenCode + Claude (Recommended)
-agent-toolbox-opencode     # OpenCode
-agent-toolbox-claude      # Claude Code
-agent-toolbox-kilo        # Kilo
-agent-toolbox-copilot     # GitHub Copilot
-agent-toolbox-qwen        # Qwen
-agent-toolbox-codebuddy    # CodeBuddy
+agentbox-occ         # OpenCode + Claude (Recommended)
+agentbox-opencode     # OpenCode
+agentbox-claude      # Claude Code
+agentbox-kilo        # Kilo
+agentbox-copilot     # GitHub Copilot
+agentbox-qwen        # Qwen
+agentbox-codebuddy    # CodeBuddy
 ```
 
 ### Shortcut Usage Examples
 
 ```bash
 # Enter current directory's OpenCode toolbox
-agent-toolbox-opencode .
+agentbox-opencode .
 
 # Create Claude Code toolbox for project
-agent-toolbox-claude create myproject
+agentbox-claude create myproject
 
 # Run command in Kilo toolbox
-agent-toolbox-kilo run . npm test
+agentbox-kilo run . npm test
 
 # List all Kilo toolboxes
-agent-toolbox-kilo list
+agentbox-kilo list
 
 # Run agent in default project
-agent-toolbox-qwen
+agentbox-qwen
 
 # Show help
-agent-toolbox-opencode --help
+agentbox-opencode --help
 ```
 
 ## Commands
@@ -113,40 +113,40 @@ agent-toolbox-opencode --help
 | `build <agent>` | Build agent image |
 | `build-all` | Build all images |
 
-**Note:** Each agent also has a shortcut command (e.g., `agent-toolbox-opencode`) that provides the same functionality.
+**Note:** Each agent also has a shortcut command (e.g., `agentbox-opencode`) that provides the same functionality.
 
 ## Usage Examples
 
 ```bash
 # OCC (OpenCode + Claude) examples
 cd ~/project1
-agent-toolbox create occ .
-agent-toolbox enter occ .
+agentbox create occ .
+agentbox enter occ .
 
 # OpenCode examples
 cd ~/project1
-agent-toolbox create opencode .
-agent-toolbox enter opencode .
+agentbox create opencode .
+agentbox enter opencode .
 
 # Claude Code examples
-agent-toolbox create claude project2
-agent-toolbox run claude project2
+agentbox create claude project2
+agentbox run claude project2
 
 # Run commands directly
-agent-toolbox run occ . git status
-agent-toolbox run opencode . git status
-agent-toolbox run claude myproject npm test
+agentbox run occ . git status
+agentbox run opencode . git status
+agentbox run claude myproject npm test
 
 # Or use shortcut commands
-agent-toolbox-opencode .          # Enter current project
-agent-toolbox-kilo run . npm test # Run npm test in Kilo toolbox
-agent-toolbox-qwen                # Run Qwen in default project
+agentbox-opencode .          # Enter current project
+agentbox-kilo run . npm test # Run npm test in Kilo toolbox
+agentbox-qwen                # Run Qwen in default project
 ```
 
 ## Directory Structure
 
 ```
-~/.local/share/agent-toolbox/
+~/.local/share/agentbox/
 ├── repo/                    # Utility scripts
 ├── occ/
 │   ├── project1/           # OCC project1 home
@@ -162,7 +162,7 @@ agent-toolbox-qwen                # Run Qwen in default project
 
 ## Configuration
 
-Config file: `~/.config/agent-toolbox/agents.yaml`
+Config file: `~/.config/agentbox/agents.yaml`
 
 ```yaml
 default_agent: occ
@@ -170,7 +170,7 @@ default_agent: occ
 agents:
   occ:
     name: OpenCode + Claude
-    image: localhost/toolbox-agent-occ:latest
+    image: localhost/agentbox-occ:latest
     cmd: claude
     config_dir: ~/.config/claude
 
@@ -187,10 +187,10 @@ When a toolbox is created, the following directories are mounted into the contai
 
 | Host Path | Container Path | Description |
 |-----------|---------------|-------------|
-| `~/.claude` | `/home/oliveagle/.claude` | Claude Code configuration |
-| `~/.config/opencode` | `/home/oliveagle/.config/opencode` | OpenCode configuration |
-| `~/.gitconfig` | `/home/oliveagle/.gitconfig` | Git configuration (read-only) |
-| `~/.local/share/agent-toolbox/<agent>/<project>` | Same path | Toolbox home directory |
+| `~/.claude` | `${HOME}/.claude` | Claude Code configuration |
+| `~/.config/opencode` | `${HOME}/.config/opencode` | OpenCode configuration |
+| `~/.gitconfig` | `${HOME}/.gitconfig` | Git configuration (read-only) |
+| `~/.local/share/agentbox/<agent>/<project>` | Same path | Toolbox home directory |
 | `/etc/localtime` | `/etc/localtime` | Timezone |
 | `/tmp/.X11-unix` | `/tmp/.X11-unix` | X11 display server (if enabled) |
 | `/tmp` | `/tmp` | Temporary directory |
@@ -221,8 +221,8 @@ When a toolbox is created, the entrypoint script automatically:
 
 **Note**: If you encounter permission issues with mounted configs, try recreating the toolbox:
 ```bash
-agent-toolbox rm occ myproject
-agent-toolbox create occ myproject
+agentbox rm occ myproject
+agentbox create occ myproject
 ```
 
 ## SSH Keys
@@ -231,7 +231,7 @@ Agentbox generates a dedicated SSH key pair for git operations:
 
 ```bash
 # Keys are stored at:
-~/.config/agent-toolbox/ssh/
+~/.config/agentbox/ssh/
 ├── id_ed25519         # Private key
 └── id_ed25519.pub     # Public key
 ```
@@ -240,7 +240,7 @@ Agentbox generates a dedicated SSH key pair for git operations:
 ```bash
 # Keys are auto-generated on first run
 # Add public key to GitHub/GitLab:
-cat ~/.config/agent-toolbox/ssh/id_ed25519.pub
+cat ~/.config/agentbox/ssh/id_ed25519.pub
 
 # Enable SSH mounting in config (default: disabled)
 ssh: true
@@ -253,11 +253,11 @@ ssh: true
 
 Build order:
 ```bash
-agent-toolbox build-all
+agentbox build-all
 # Or build individually
-agent-toolbox build occ
-agent-toolbox build opencode
-agent-toolbox build claude
+agentbox build occ
+agentbox build opencode
+agentbox build claude
 ```
 
 ### Build with Proxy
@@ -266,8 +266,8 @@ Builds use host network (`--network=host`) to access localhost proxies:
 
 ```bash
 # Use proxy from environment variables
-HTTP_PROXY=http://localhost:8080 agent-toolbox build occ
-HTTPS_PROXY=http://proxy.example.com:8080 agent-toolbox build-all
+HTTP_PROXY=http://localhost:8080 agentbox build occ
+HTTPS_PROXY=http://proxy.example.com:8080 agentbox build-all
 
 # Or set globally in your shell profile
 export HTTP_PROXY=http://localhost:8080
@@ -281,10 +281,10 @@ The `occ` agent combines OpenCode and Claude Code in a single container:
 
 ```bash
 # Create OCC toolbox
-agent-toolbox create occ .
+agentbox create occ .
 
 # Enter and use Claude
-agent-toolbox enter occ .
+agentbox enter occ .
 ⬢ occ:~$ claude
 
 # Or use OpenCode
@@ -311,11 +311,11 @@ ENV AGENT_NAME=myagent
 ENV AGENT_CMD=myagent
 ```
 
-2. Update config `~/.config/agent-toolbox/agents.yaml`
+2. Update config `~/.config/agentbox/agents.yaml`
 
 3. Build the image:
 ```bash
-agent-toolbox build myagent
+agentbox build myagent
 ```
 
 4. Generate wrapper script:
@@ -328,8 +328,8 @@ AGENTS="occ opencode claude kilo copilot qwen codebuddy myagent" \
 ## File Structure
 
 ```
-toolbox-opencode/
-├── agent-toolbox              # Main script
+agentbox/
+├── agentbox              # Main script
 ├── install.sh                 # Installation script
 ├── lib/
 │   └── generate-wrappers.sh   # Wrapper script generator

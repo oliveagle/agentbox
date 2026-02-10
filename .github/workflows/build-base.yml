@@ -14,7 +14,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/toolbox-base
+  IMAGE_NAME: ${{ github.repository }}/base
 
 jobs:
   build-and-push:

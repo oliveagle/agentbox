@@ -3,10 +3,10 @@
 
 set -euo pipefail
 
-REPO_URL="https://github.com/oliveagle/toolbox-opencode"
+REPO_URL="https://github.com/oliveagle/agentbox"
 INSTALL_DIR="${HOME}/.local/bin"
-CONFIG_DIR="${HOME}/.config/agent-toolbox"
-REPO_DIR="${HOME}/.local/share/agent-toolbox"
+CONFIG_DIR="${HOME}/.config/agentbox"
+REPO_DIR="${HOME}/.local/share/agentbox"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -63,15 +63,15 @@ clone_repo() {
 }
 
 install_toolbox() {
-    log_info "Installing agent-toolbox..."
+    log_info "Installing agentbox..."
 
     mkdir -p "$INSTALL_DIR"
     mkdir -p "$CONFIG_DIR"
 
-    cp "$REPO_DIR/agent-toolbox" "$INSTALL_DIR/"
-    chmod +x "$INSTALL_DIR/agent-toolbox"
+    cp "$REPO_DIR/agentbox" "$INSTALL_DIR/"
+    chmod +x "$INSTALL_DIR/agentbox"
 
-    log_success "Installed: $INSTALL_DIR/agent-toolbox"
+    log_success "Installed: $INSTALL_DIR/agentbox"
 }
 
 generate_wrappers() {
@@ -110,7 +110,7 @@ build_images() {
     # Use host network for build (needed for localhost proxy access)
     build_args+=(--network=host)
 
-    if podman build "${build_args[@]}" -t localhost/toolbox-base:latest -f images/Containerfile.base .; then
+    if podman build "${build_args[@]}" -t localhost/agentbox-base:latest -f images/Containerfile.base .; then
         log_success "基础镜像构建成功"
     else
         log_warn "基础镜像构建失败"
@@ -123,7 +123,7 @@ build_images() {
         if [[ -f "$REPO_DIR/agents/$agent/Containerfile" ]]; then
             log_info "构建 $agent..."
             cd "$REPO_DIR/agents/$agent"
-            podman build "${build_args[@]}" -t "localhost/toolbox-agent-${agent}:latest" -f Containerfile . || log_warn "$agent 构建失败"
+            podman build "${build_args[@]}" -t "localhost/agentbox-agent-${agent}:latest" -f Containerfile . || log_warn "$agent 构建失败"
         fi
     done
 
@@ -135,14 +135,14 @@ show_help() {
     log_success "AI Agent Toolbox installation complete!"
     echo
     echo "Quick start:"
-    echo "  agent-toolbox agents"
-    echo "  agent-toolbox create occ ."
-    echo "  agent-toolbox enter occ ."
+    echo "  agentbox agents"
+    echo "  agentbox create occ ."
+    echo "  agentbox enter occ ."
     echo
     echo "Or use shortcut commands:"
     echo "  occ .                           # Enter occ toolbox (short form)"
     echo "  occ create .                    # Create occ toolbox"
-    echo "  agent-toolbox-occ .             # Full form"
+    echo "  agentbox-occ .             # Full form"
     echo
 }
 

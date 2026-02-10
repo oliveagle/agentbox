@@ -8,10 +8,10 @@ import (
 var (
 	cfgFile string
 	rootCmd = &cobra.Command{
-		Use:   "opencode-toolbox",
-		Short: "A Toolbx-inspired container management tool for OpenCode",
-		Long: `OpenCode Toolbox allows you to create and manage interactive 
-command line environments for software development without installing 
+		Use:   "agentbox",
+		Short: "A Toolbx-inspired container management tool for AI agents",
+		Long: `Agentbox allows you to create and manage interactive
+command line environments for software development without installing
 software on your host system.
 
 Built on top of Docker/Podman and OCI container technologies.`,
@@ -26,7 +26,7 @@ func Execute() error {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/opencode-toolbox/config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.config/agentbox/config.yaml)")
 	rootCmd.PersistentFlags().String("engine", "auto", "Container engine to use (docker, podman, auto)")
 	viper.BindPFlag("engine", rootCmd.PersistentFlags().Lookup("engine"))
 
@@ -44,12 +44,12 @@ func initConfig() {
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 	} else {
-		viper.AddConfigPath("$HOME/.config/opencode-toolbox")
+		viper.AddConfigPath("$HOME/.config/agentbox")
 		viper.SetConfigName("config")
 		viper.SetConfigType("yaml")
 	}
 
-	viper.SetEnvPrefix("OPENCODE_TOOLBOX")
+	viper.SetEnvPrefix("AGENTBOX")
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {

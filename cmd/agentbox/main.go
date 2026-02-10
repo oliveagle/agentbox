@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/oliveagle/toolbox-opencode/cmd/opencode-toolbox/cmd"
+	"github.com/oliveagle/agentbox/cmd/agentbox/cmd"
 )
 
 func main() {

@@ -4,9 +4,9 @@
 set -euo pipefail
 
 INSTALL_DIR="${INSTALL_DIR:-${HOME}/.local/bin}"
-CONFIG_DIR="${HOME}/.config/agent-toolbox"
-DATA_DIR="${HOME}/.local/share/agent-toolbox"
-CACHE_DIR="${HOME}/.cache/agent-toolbox"
+CONFIG_DIR="${HOME}/.config/agentbox"
+DATA_DIR="${HOME}/.local/share/agentbox"
+CACHE_DIR="${HOME}/.cache/agentbox"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -62,7 +62,7 @@ remove_images() {
     log_info "查找 toolbox 镜像..."
     
     local images
-    images=$("$CONTAINER_ENGINE" images --format "{{.Repository}}:{{.Tag}}" | grep "^localhost/toolbox-" || true)
+    images=$("$CONTAINER_ENGINE" images --format "{{.Repository}}:{{.Tag}}" | grep "^localhost/agentbox-" || true)
     
     if [[ -n "$images" ]]; then
         echo "找到以下镜像:"
@@ -88,7 +88,7 @@ remove_wrappers() {
     
     local wrappers=""
     for agent in opencode claude-code kilo copilot qwen codebuddy; do
-        local wrapper="${INSTALL_DIR}/agent-toolbox-${agent}"
+        local wrapper="${INSTALL_DIR}/agentbox-${agent}"
         if [[ -f "$wrapper" ]]; then
             wrappers="$wrappers $wrapper"
         fi
@@ -110,7 +110,7 @@ remove_wrappers() {
 # 删除主脚本
 remove_main_script() {
     log_info "删除主脚本..."
-    local script="${INSTALL_DIR}/agent-toolbox"
+    local script="${INSTALL_DIR}/agentbox"
     if [[ -f "$script" ]]; then
         rm -f "$script"
         log_success "主脚本已删除"
@@ -145,8 +145,8 @@ main() {
     echo "这将卸载以下内容:"
     echo "  - 所有 toolbox 容器"
     echo "  - 所有 toolbox 镜像"
-    echo "  - 主脚本 (agent-toolbox)"
-    echo "  - 快捷命令 (agent-toolbox-*)"
+    echo "  - 主脚本 (agentbox)"
+    echo "  - 快捷命令 (agentbox-*)"
     echo "  - 配置和数据文件"
     echo
     

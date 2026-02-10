@@ -8,14 +8,14 @@ AGENTS="${AGENTS:-occ}"
 
 # Generate special aliases for commonly used agents
 generate_special_aliases() {
-    # occ -> agent-toolbox-occ
+    # occ -> agentbox-occ
     local alias_name="occ"
     local alias_path="${INSTALL_DIR}/${alias_name}"
-    local target="agent-toolbox-occ"
+    local target="agentbox-occ"
 
     cat > "$alias_path" << ALIAS
 #!/bin/bash
-# OCC Alias - shortcut for agent-toolbox-occ
+# OCC Alias - shortcut for agentbox-occ
 # Auto-generated, do not edit manually
 
 set -euo pipefail
@@ -28,7 +28,7 @@ ALIAS
 
 generate_wrapper() {
     local agent="$1"
-    local wrapper_name="agent-toolbox-${agent}"
+    local wrapper_name="agentbox-${agent}"
     local wrapper_path="${INSTALL_DIR}/${wrapper_name}"
     
     cat > "$wrapper_path" << WRAPPER
@@ -39,7 +39,7 @@ generate_wrapper() {
 set -euo pipefail
 
 AGENT="${agent}"
-TOOLBOX_CMD="agent-toolbox"
+TOOLBOX_CMD="agentbox"
 
 show_help() {
   cat << 'HELP'
@@ -158,15 +158,15 @@ main() {
     echo
     echo "You can now use:"
     for agent in $AGENTS; do
-        echo "  agent-toolbox-${agent}"
+        echo "  agentbox-${agent}"
     done
     echo
     echo "Special aliases:"
-    echo "  occ                              # Shortcut for agent-toolbox-occ"
+    echo "  occ                              # Shortcut for agentbox-occ"
     echo
     echo "Examples:"
     echo "  occ .                            # Enter occ toolbox (short form)"
-    echo "  agent-toolbox-occ .              # Enter occ toolbox (full form)"
+    echo "  agentbox-occ .              # Enter occ toolbox (full form)"
     echo "  occ create .                     # Create occ toolbox"
     echo "  occ run . git status             # Run git status in occ toolbox"
 }
