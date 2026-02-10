@@ -728,7 +728,7 @@ enter_agentbox() {
         "$container_name" \
         /bin/bash -c "
             export PATH=\"${agentbox_home}/.local/bin:/usr/local/bin:/usr/bin:/bin\"
-            export PS1='\\[\\033[0;32m\\]⬢[\\033[0m\\] \\[\\033[1;36m\\]${agent}\\[\\033[0m\\]:\\[\\033[0;34m\\]\\w\\[\\033[0m\\]\\$ '
+            export PS1='\\[\\033[0;32m\\]⬢[\\033[0m\\] \\[\\033[1;36m\\]${agent}\\[\\033[0m\\]:\\[\\033[0;34m\\]\\w\\[\\033[0m\\]\\n\\$ '
             cd '$(pwd)' 2>/dev/null || cd '$agentbox_home'
             
             echo -e '${GREEN}AI Agent Toolbox Ready!${NC}'
@@ -738,7 +738,7 @@ enter_agentbox() {
             
             exec /bin/bash --rcfile <(echo '
                 export PATH=\"${agentbox_home}/.local/bin:/usr/local/bin:/usr/bin:/bin\"
-                export PS1=\"\\[\\033[0;32m\\]⬢[\\033[0m\\] \\[\\033[1;36m\\]${agent}\\[\\033[0m\\]:\\[\\033[0;34m\\]\\w\\[\\033[0m\\]\\$ \"
+                export PS1=\"\\[\\033[0;32m\\]⬢[\\033[0m\\] \\[\\033[1;36m\\]${agent}\\[\\033[0m\\]:\\[\\033[0;34m\\]\\w\\[\\033[0m\\]\\n\\$ \"
                 alias ll=\"ls -la\"
             ')
         "
