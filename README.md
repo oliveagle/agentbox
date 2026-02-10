@@ -181,6 +181,28 @@ agents:
   docker: false        # Don't mount Docker
 ```
 
+## Container Mounts
+
+When a toolbox is created, the following directories are mounted into the container:
+
+| Host Path | Container Path | Description |
+|-----------|---------------|-------------|
+| `~/.claude` | `/home/oliveagle/.claude` | Claude Code configuration |
+| `~/.config/opencode` | `/home/oliveagle/.config/opencode` | OpenCode configuration |
+| `~/.gitconfig` | `/home/oliveagle/.gitconfig` | Git configuration (read-only) |
+| `~/.local/share/agent-toolbox/<agent>/<project>` | Same path | Toolbox home directory |
+| `/etc/localtime` | `/etc/localtime` | Timezone |
+| `/tmp/.X11-unix` | `/tmp/.X11-unix` | X11 display server (if enabled) |
+| `/tmp` | `/tmp` | Temporary directory |
+
+**OCC Agent Additional Mounts:**
+- `~/.config/claude` - Claude Code settings
+- `~/.config/opencode` - OpenCode settings
+
+**Optional Mounts (configured via `agents.yaml`):**
+- `~/.ssh` - SSH keys (when `ssh: true`)
+- `/var/run/docker.sock` - Docker socket (when `docker: true`)
+
 ## User Permissions
 
 Toolbox automatically handles user UID/GID mapping between host and container:
