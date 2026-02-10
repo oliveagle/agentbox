@@ -97,24 +97,24 @@ check_path() {
 build_images() {
     log_info "构建基础镜像..."
     cd "$REPO_DIR"
-    
+
     if podman build -t localhost/toolbox-base:latest -f images/Containerfile.base .; then
         log_success "基础镜像构建成功"
     else
         log_warn "基础镜像构建失败"
         return 1
     fi
-    
+
     log_info "构建 Agent 镜像..."
-    
-    for agent in opencode claude-code kilo; do
+
+    for agent in occ; do
         if [[ -f "$REPO_DIR/agents/$agent/Containerfile" ]]; then
             log_info "构建 $agent..."
             cd "$REPO_DIR/agents/$agent"
             podman build -t "localhost/toolbox-agent-${agent}:latest" -f Containerfile . || log_warn "$agent 构建失败"
         fi
     done
-    
+
     log_success "镜像构建完成"
 }
 
@@ -124,12 +124,13 @@ show_help() {
     echo
     echo "Quick start:"
     echo "  agent-toolbox agents"
-    echo "  agent-toolbox create opencode ."
-    echo "  agent-toolbox enter opencode ."
+    echo "  agent-toolbox create occ ."
+    echo "  agent-toolbox enter occ ."
     echo
     echo "Or use shortcut commands:"
-    echo "  agent-toolbox-opencode ."
-    echo "  agent-toolbox-claude-code create"
+    echo "  occ .                           # Enter occ toolbox (short form)"
+    echo "  occ create .                    # Create occ toolbox"
+    echo "  agent-toolbox-occ .             # Full form"
     echo
 }
 

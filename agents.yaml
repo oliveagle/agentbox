@@ -1,0 +1,28 @@
+# AI Agent Toolbox 配置
+
+# 默认 Agent
+default_agent: occ
+
+# Agent 定义
+agents:
+  occ:
+    name: OCC
+    description: OpenCode + Claude Code combined
+    image: localhost/toolbox-agent-occ:latest
+    cmd: claude
+    config_dirs: ~/.claude,~/.config/opencode
+
+# 默认挂载设置
+mounts:
+  project: true
+  agent_config: true
+  gitconfig: true
+  ssh: false
+  docker: false
+  display: true
+  shared_cache: true
+
+# 全局环境变量
+env:
+  EDITOR: vim
+  TZ: Asia/Shanghai

@@ -1,5 +1,5 @@
 # OpenCode + Claude Code Combined Toolbox
-ARG BASE_IMAGE=ghcr.io/oliveagle/toolbox-opencode/toolbox-base:latest
+ARG BASE_IMAGE=localhost/toolbox-base:latest
 FROM ${BASE_IMAGE}
 
 LABEL agent="occ"
@@ -14,9 +14,9 @@ RUN curl -fsSL https://claude.ai/install | bash || \
     echo "Claude Code requires manual install: npm install -g @anthropic-ai/claude-code"
 
 # Create config directories
-RUN mkdir -p /home/toolboxuser/.config/opencode && \
-    mkdir -p /home/toolboxuser/.config/claude && \
-    chown -R toolboxuser:toolboxuser /home/toolboxuser/.config
+RUN mkdir -p /home/oliveagle/.config/opencode && \
+    mkdir -p /home/oliveagle/.config/claude && \
+    chown -R oliveagle:oliveagle /home/oliveagle/.config
 
 # Install common tools for both agents
 RUN apt-get update && apt-get install -y \
@@ -28,4 +28,5 @@ RUN apt-get update && apt-get install -y \
 ENV AGENT_NAME=occ
 ENV AGENT_CMD=claude
 
-CMD ["/bin/bash"]
+# Don't override CMD - let base image's sleep infinity run
+# This ensures the entrypoint completes initialization

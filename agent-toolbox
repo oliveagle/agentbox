@@ -388,27 +388,36 @@ generate_mount_args() {
     mount_args+=(--volume "${cache_dir}:/tmp/agent-cache")
     
     # Agent 配置（必须挂载）- 支持多个配置目录
-    # 挂载到容器内的正确位置（相对于隔离的 HOME）
+    # 挂载到容器内的正确位置
     local mount_agent_config
     mount_agent_config=$(get_global_config "agent_config")
     if [[ "${mount_agent_config:-true}" == "true" ]]; then
-        local agent_config_dirs
-        agent_config_dirs=$(get_agent_config_list "$agent" "config_dir")
-        
-        # 逐行处理每个配置目录
-        while IFS= read -r agent_config_dir; do
-            [[ -z "$agent_config_dir" ]] && continue
-            # 展开 ~ 为实际路径
-            agent_config_dir="${agent_config_dir/#\~/$HOST_HOME}"
-            if [[ -d "$agent_config_dir" ]]; then
-                # 获取配置目录的基础名（如 ~/.config/claude -> .config/claude）
-                local config_basename
-                config_basename=$(basename "$agent_config_dir")
-                # 挂载到容器内 HOME 下的对应位置
-                local container_config_path="${HOST_HOME}/.config/${config_basename}"
-                mount_args+=(--volume "${agent_config_dir}:${container_config_path}:rw")
-            fi
-        done <<< "$agent_config_dirs"
+        # 首先检查 config_dirs（逗号分隔），回退到 config_dir
+        local agent_config_dirs_raw
+        agent_config_dirs_raw=$(get_agent_config "$agent" "config_dirs")
+        if [[ -z "$agent_config_dirs_raw" ]]; then
+            agent_config_dirs_raw=$(get_agent_config "$agent" "config_dir")
+        fi
+
+        if [[ -n "$agent_config_dirs_raw" ]]; then
+            # 支持逗号分隔的多个目录
+            IFS=',' read -ra dirs <<< "$agent_config_dirs_raw"
+            for agent_config_dir in "${dirs[@]}"; do
+                # 去除空格
+                agent_config_dir=$(echo "$agent_config_dir" | xargs)
+                [[ -z "$agent_config_dir" ]] && continue
+
+                # 如果路径以 ~ 开头，展开为 $HOST_HOME
+                if [[ "$agent_config_dir" == "~"* ]]; then
+                    agent_config_dir="$HOST_HOME${agent_config_dir:1}"
+                fi
+
+                if [[ -d "$agent_config_dir" ]]; then
+                    # 挂载到容器内的对应位置（保持原路径结构）
+                    mount_args+=(--volume "${agent_config_dir}:${agent_config_dir}:rw")
+                fi
+            done
+        fi
     fi
     
     # Git 配置
@@ -539,23 +548,44 @@ create_toolbox() {
         --volume "${toolbox_home}:${toolbox_home}:rw"
         --env "EDITOR=vim"
         --env "TZ=Asia/Shanghai"
-        --entrypoint /bin/bash
         --network bridge
     )
-    
+
     # 添加挂载
     while IFS= read -r line; do
         [[ -n "$line" ]] && run_args+=("$line")
     done <<< "$mount_args"
-    
-    # 创建容器
-    "$CONTAINER_ENGINE" run "${engine_args[@]}" "${run_args[@]}" "$image_name" -c "sleep infinity"
-    
-    # 设置用户
-    setup_container_user "$container_name" "$toolbox_home"
-    
+
+    # 添加 Claude/OpenCode 配置环境变量
+    local claude_settings="${HOST_HOME}/.claude/settings.json"
+    if [[ -f "$claude_settings" ]]; then
+        # 读取 settings.json 中的 env 部分并添加到容器
+        local env_vars
+        env_vars=$(jq -r '.env | to_entries[] | "--env \(.key)=\(.value)"' "$claude_settings" 2>/dev/null || true)
+        if [[ -n "$env_vars" ]]; then
+            while IFS= read -r env_var; do
+                [[ -n "$env_var" ]] && run_args+=($env_var)
+            done <<< "$env_vars"
+        fi
+    fi
+
+    # 创建容器（使用镜像的 entrypoint 来处理权限）
+    "$CONTAINER_ENGINE" run "${engine_args[@]}" "${run_args[@]}" "$image_name"
+
+    # 等待 entrypoint 完成初始化
+    sleep 1
+
+    # 修复 /home/oliveagle 目录的所有权（可能由 root 创建）
+    # 使用 root 在容器内执行 chown
+    "$CONTAINER_ENGINE" exec --user root "$container_name" bash -c "
+        if [[ -d /home/oliveagle ]]; then
+            chown -R ${HOST_UID}:${HOST_GID} /home/oliveagle
+            echo '[toolbox] Fixed /home/oliveagle ownership'
+        fi
+    " 2>/dev/null || true
+
     # 创建配置目录符号链接（让 agent 能找到配置）
-    create_config_symlinks "$container_name" "$agent"
+    create_config_symlinks "$container_name" "$agent" "$toolbox_home"
     
     log_success "Toolbox 创建成功: $container_name"
     log_info "进入: agent-toolbox enter $agent $project_name"
@@ -565,7 +595,10 @@ create_toolbox() {
 create_config_symlinks() {
     local container_name="$1"
     local agent="$2"
-    
+    local toolbox_home="$3"
+
+    get_user_info
+
     # OCC agent 需要同时链接 opencode 和 claude 配置
     local config_dirs=()
     if [[ "$agent" == "occ" ]]; then
@@ -578,7 +611,7 @@ create_config_symlinks() {
             [[ -n "$dir" ]] && config_dirs+=$(basename "$dir")
         done <<< "$config_dirs_raw"
     fi
-    
+
     for config_name in "${config_dirs[@]}"; do
         [[ -z "$config_name" ]] && continue
         local src_path="${HOST_HOME}/.config/${config_name}"

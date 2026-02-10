@@ -4,7 +4,27 @@
 set -euo pipefail
 
 INSTALL_DIR="${INSTALL_DIR:-${HOME}/.local/bin}"
-AGENTS="${AGENTS:-opencode claude kilo copilot qwen codebuddy occ}"
+AGENTS="${AGENTS:-occ}"
+
+# Generate special aliases for commonly used agents
+generate_special_aliases() {
+    # occ -> agent-toolbox-occ
+    local alias_name="occ"
+    local alias_path="${INSTALL_DIR}/${alias_name}"
+    local target="agent-toolbox-occ"
+
+    cat > "$alias_path" << ALIAS
+#!/bin/bash
+# OCC Alias - shortcut for agent-toolbox-occ
+# Auto-generated, do not edit manually
+
+set -euo pipefail
+exec "${INSTALL_DIR}/${target}" "\$@"
+ALIAS
+
+    chmod +x "$alias_path"
+    echo "Generated alias: $alias_path -> $target"
+}
 
 generate_wrapper() {
     local agent="$1"
@@ -99,7 +119,7 @@ case "\$cmd" in
         \$TOOLBOX_CMD rm "\$AGENT" "\$project"
         ;;
     list|ls)
-        $TOOLBOX_CMD list | grep "agentbox-$AGENT"
+        \$TOOLBOX_CMD list | grep "toolbox-\$AGENT"
         ;;
     *)
         echo "Unknown command: \$cmd"
@@ -117,13 +137,17 @@ WRAPPER
 main() {
     echo "Generating agent shortcut commands..."
     echo
-    
+
     mkdir -p "$INSTALL_DIR"
-    
+
     for agent in $AGENTS; do
         generate_wrapper "$agent"
     done
-    
+
+    echo
+    echo "Generating special aliases..."
+    generate_special_aliases
+
     echo
     echo "Shortcut commands generated at: $INSTALL_DIR"
     echo
@@ -132,10 +156,14 @@ main() {
         echo "  agent-toolbox-${agent}"
     done
     echo
+    echo "Special aliases:"
+    echo "  occ                              # Shortcut for agent-toolbox-occ"
+    echo
     echo "Examples:"
-    echo "  agent-toolbox-opencode .          # Enter opencode toolbox"
-    echo "  agent-toolbox-claude-code create  # Create claude-code toolbox"
-    echo "  agent-toolbox-kilo run . npm test # Run npm test in kilo toolbox"
+    echo "  occ .                            # Enter occ toolbox (short form)"
+    echo "  agent-toolbox-occ .              # Enter occ toolbox (full form)"
+    echo "  occ create .                     # Create occ toolbox"
+    echo "  occ run . git status             # Run git status in occ toolbox"
 }
 
 main "$@"

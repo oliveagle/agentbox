@@ -174,11 +174,33 @@ agents:
     cmd: claude
     config_dir: ~/.config/claude
 
-mounts:
+ mounts:
   agent_config: true   # Mount agent config
   gitconfig: true      # Mount git config
   ssh: true            # Mount SSH keys
   docker: false        # Don't mount Docker
+```
+
+## User Permissions
+
+Toolbox automatically handles user UID/GID mapping between host and container:
+
+```
+Host User (UID 1000)  <--->  Container User (UID 1000)
+        |                           |
+   ~/.config/claude            ~/.config/claude
+   (bind mount)               (same UID, no permission issues)
+```
+
+When a toolbox is created, the entrypoint script automatically:
+1. Creates a user in the container matching your host UID/GID
+2. Fixes permissions on all mounted config directories
+3. Ensures the toolbox home directory is owned by you
+
+**Note**: If you encounter permission issues with mounted configs, try recreating the toolbox:
+```bash
+agent-toolbox rm occ myproject
+agent-toolbox create occ myproject
 ```
 
 ## SSH Keys

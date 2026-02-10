@@ -87,8 +87,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
 
-# 创建 toolbox 用户（运行时会被替换为实际用户）
-RUN useradd -m -s /bin/bash -G sudo toolboxuser && \
+# 删除默认的 ubuntu 用户，创建 oliveagle 用户 (UID 1000)
+RUN userdel -r ubuntu 2>/dev/null || true && \
+    useradd -m -u 1000 -s /bin/bash -G sudo oliveagle && \
     echo '%sudo ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/toolbox && \
     chmod 0440 /etc/sudoers.d/toolbox
 
@@ -104,5 +105,10 @@ RUN mkdir -p /usr/share/empty && \
 # 清理 /home（Toolbx 兼容性要求）
 RUN rm -rf /home/*
 
-# 默认命令
-CMD ["/bin/bash"]
+# 复制并设置 entrypoint 脚本
+COPY lib/toolbox-entrypoint.sh /usr/local/bin/toolbox-entrypoint.sh
+RUN chmod +x /usr/local/bin/toolbox-entrypoint.sh
+
+# 使用 entrypoint 来初始化权限
+ENTRYPOINT ["/usr/local/bin/toolbox-entrypoint.sh"]
+CMD ["sleep", "infinity"]
