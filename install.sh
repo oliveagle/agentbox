@@ -110,12 +110,16 @@ build_images() {
     # Use host network for build (needed for localhost proxy access)
     build_args+=(--network=host)
 
-    if podman build "${build_args[@]}" -t localhost/agentbox-base:latest -f images/Containerfile.base .; then
+    # Use absolute path for COPY to avoid podman context escaping issues
+    cp "$REPO_DIR/lib/agentbox-entrypoint.sh" "$REPO_DIR/images/agentbox-entrypoint.sh"
+    if podman build "${build_args[@]}" -t localhost/agentbox-base:latest -f images/Containerfile.base images; then
         log_success "基础镜像构建成功"
     else
+        rm -f "$REPO_DIR/images/agentbox-entrypoint.sh"
         log_warn "基础镜像构建失败"
         return 1
     fi
+    rm -f "$REPO_DIR/images/agentbox-entrypoint.sh"
 
     log_info "构建 Agent 镜像..."
 
