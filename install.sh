@@ -98,7 +98,16 @@ build_images() {
     log_info "构建基础镜像..."
     cd "$REPO_DIR"
 
-    if podman build -t localhost/toolbox-base:latest -f images/Containerfile.base .; then
+    # Build args for proxy (from environment variables)
+    local build_args=()
+    [[ -n "${HTTP_PROXY:-}" ]] && build_args+=(--build-arg "HTTP_PROXY=$HTTP_PROXY")
+    [[ -n "${HTTPS_PROXY:-}" ]] && build_args+=(--build-arg "HTTPS_PROXY=$HTTPS_PROXY")
+    [[ -n "${NO_PROXY:-}" ]] && build_args+=(--build-arg "NO_PROXY=$NO_PROXY")
+    [[ -n "${http_proxy:-}" ]] && build_args+=(--build-arg "http_proxy=$http_proxy")
+    [[ -n "${https_proxy:-}" ]] && build_args+=(--build-arg "https_proxy=$https_proxy")
+    [[ -n "${no_proxy:-}" ]] && build_args+=(--build-arg "no_proxy=$no_proxy")
+
+    if podman build "${build_args[@]}" -t localhost/toolbox-base:latest -f images/Containerfile.base .; then
         log_success "基础镜像构建成功"
     else
         log_warn "基础镜像构建失败"
@@ -111,7 +120,7 @@ build_images() {
         if [[ -f "$REPO_DIR/agents/$agent/Containerfile" ]]; then
             log_info "构建 $agent..."
             cd "$REPO_DIR/agents/$agent"
-            podman build -t "localhost/toolbox-agent-${agent}:latest" -f Containerfile . || log_warn "$agent 构建失败"
+            podman build "${build_args[@]}" -t "localhost/toolbox-agent-${agent}:latest" -f Containerfile . || log_warn "$agent 构建失败"
         fi
     done
 

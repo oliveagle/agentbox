@@ -255,17 +255,26 @@ get_global_config() {
 # 构建基础镜像
 build_base_image() {
     log_info "构建基础镜像 toolbox-base..."
-    
+
     local script_dir
     script_dir=$(get_script_dir)
-    
+
     if [[ ! -f "$script_dir/images/Containerfile.base" ]]; then
         log_error "未找到基础镜像 Containerfile"
         return 1
     fi
-    
+
+    # Build args for proxy (from environment variables)
+    local build_args=()
+    [[ -n "${HTTP_PROXY:-}" ]] && build_args+=(--build-arg "HTTP_PROXY=$HTTP_PROXY")
+    [[ -n "${HTTPS_PROXY:-}" ]] && build_args+=(--build-arg "HTTPS_PROXY=$HTTPS_PROXY")
+    [[ -n "${NO_PROXY:-}" ]] && build_args+=(--build-arg "NO_PROXY=$NO_PROXY")
+    [[ -n "${http_proxy:-}" ]] && build_args+=(--build-arg "http_proxy=$http_proxy")
+    [[ -n "${https_proxy:-}" ]] && build_args+=(--build-arg "https_proxy=$https_proxy")
+    [[ -n "${no_proxy:-}" ]] && build_args+=(--build-arg "no_proxy=$no_proxy")
+
     cd "$script_dir/images"
-    "$CONTAINER_ENGINE" build -t "$TOOLBOX_BASE_IMAGE" -f Containerfile.base . && \
+    "$CONTAINER_ENGINE" build "${build_args[@]}" -t "$TOOLBOX_BASE_IMAGE" -f Containerfile.base . && \
         log_success "基础镜像构建成功: $TOOLBOX_BASE_IMAGE" || \
         log_error "基础镜像构建失败"
 }
@@ -273,19 +282,19 @@ build_base_image() {
 # 构建 Agent 镜像
 build_agent_image() {
     local agent="${1:-}"
-    
+
     if [[ -z "$agent" ]]; then
         log_error "需要指定 Agent 名称"
-        echo "Available agents: opencode, claude, kilo, copilot, qwen, codebuddy, occ"
+        echo "Available agents: occ"
         return 1
     fi
-    
+
     local script_dir
     script_dir=$(get_script_dir)
-    
+
     local agent_dir="$script_dir/agents/$agent"
     local agent_file="$agent_dir/Containerfile"
-    
+
     if [[ ! -f "$agent_file" ]]; then
         log_error "未找到 Agent '$agent' 的 Containerfile"
         log_info "可用 agents:"
@@ -294,7 +303,7 @@ build_agent_image() {
         done
         return 1
     fi
-    
+
     # 先确保基础镜像存在，尝试从 ghcr.io 拉取
     if ! "$CONTAINER_ENGINE" image exists "$TOOLBOX_BASE_IMAGE" 2>/dev/null && \
        ! "$CONTAINER_ENGINE" images --format '{{.Repository}}:{{.Tag}}' | grep -q "^${TOOLBOX_BASE_IMAGE}$"; then
@@ -304,14 +313,23 @@ build_agent_image() {
             build_base_image || return 1
         fi
     fi
-    
+
+    # Build args for proxy (from environment variables)
+    local build_args=()
+    [[ -n "${HTTP_PROXY:-}" ]] && build_args+=(--build-arg "HTTP_PROXY=$HTTP_PROXY")
+    [[ -n "${HTTPS_PROXY:-}" ]] && build_args+=(--build-arg "HTTPS_PROXY=$HTTPS_PROXY")
+    [[ -n "${NO_PROXY:-}" ]] && build_args+=(--build-arg "NO_PROXY=$NO_PROXY")
+    [[ -n "${http_proxy:-}" ]] && build_args+=(--build-arg "http_proxy=$http_proxy")
+    [[ -n "${https_proxy:-}" ]] && build_args+=(--build-arg "https_proxy=$https_proxy")
+    [[ -n "${no_proxy:-}" ]] && build_args+=(--build-arg "no_proxy=$no_proxy")
+
     local image_name
     image_name=$(generate_image_name "$agent")
-    
+
     log_info "构建 Agent 镜像: $agent -> $image_name"
-    
+
     cd "$agent_dir"
-    "$CONTAINER_ENGINE" build -t "$image_name" -f Containerfile . && \
+    "$CONTAINER_ENGINE" build "${build_args[@]}" -t "$image_name" -f Containerfile . && \
         log_success "Agent 镜像构建成功: $image_name" || \
         log_error "Agent 镜像构建失败"
 }
