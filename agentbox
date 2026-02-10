@@ -8,6 +8,7 @@ set -euo pipefail
 
 # 基础配置
 AGENTBOX_BASE_IMAGE="${AGENTBOX_BASE_IMAGE:-ghcr.io/oliveagle/agentbox/agentbox-base:latest}"
+TOOLBOX_BASE_IMAGE="${TOOLBOX_BASE_IMAGE:-${AGENTBOX_BASE_IMAGE}}"
 CONTAINER_ENGINE="${CONTAINER_ENGINE:-podman}"
 INSTALL_DIR="${INSTALL_DIR:-${HOME}/.local/share/agentbox}"
 CONFIG_DIR="${HOME}/.config/agentbox"

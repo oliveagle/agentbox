@@ -94,24 +94,11 @@ if [[ -f "$claude_settings" ]]; then
         fi
     fi
 fi
-    fi
-fi
 
 if [[ -n "${AGENTBOX_HOME:-}" && -d "$AGENTBOX_HOME" ]]; then
     log_info "Setting up AGENTBOX_HOME: $AGENTBOX_HOME"
     chown -R "${HOST_UID}:${HOST_GID}" "$AGENTBOX_HOME" 2>/dev/null || true
 fi
-
-# 创建配置目录的符号链接（将挂载的 config 链接到预期位置）
-create_config_symlinks() {
-    local config_link="$1"
-    local config_target="$2"
-
-    if [[ -d "$config_target" && ! -e "$config_link" ]]; then
-        ln -s "$config_target" "$config_link" 2>/dev/null || true
-        log_info "Created symlink: $config_link -> $config_target"
-    fi
-}
 
 # 首先确保 .config 目录存在
 if [[ ! -d "$HOME/.config" ]]; then
