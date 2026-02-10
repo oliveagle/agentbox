@@ -1,0 +1,107 @@
+#!/bin/bash
+# 显示 agentbox 容器的挂载映射
+
+set -euo pipefail
+
+CONTAINER_NAME="${1:-agentbox-occ-agentbox}"
+
+echo "========================================"
+echo "Agentbox 容器挂载映射检查"
+echo "========================================"
+echo
+echo "容器: $CONTAINER_NAME"
+echo
+
+# 检查容器是否存在
+if ! podman ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+    echo "❌ 容器不存在: $CONTAINER_NAME"
+    exit 1
+fi
+
+echo "【Podman 挂载列表】"
+echo "----------------------------------------"
+podman inspect "$CONTAINER_NAME" --format '{{json .Mounts}}' 2>/dev/null | python3 -c "
+import json,sys
+mounts = json.load(sys.stdin)
+print(f'{'Source (主机路径)':<50} {'Destination (容器路径)':<50} {'Mode':<6}')
+print('-' * 106)
+for m in mounts:
+    src = m.get('Source', '')
+    dst = m.get('Destination', '')
+    mode = 'rw' if m.get('RW', False) else 'ro'
+    # 高亮关键配置目录
+    if 'opencode' in src or 'claude' in src:
+        print(f'\033[32m{src:<50}\033[0m \033[32m{dst:<50}\033[0m {mode:<6}')
+    else:
+        print(f'{src:<50} {dst:<50} {mode:<6}')
+"
+
+echo
+echo "【关键挂载检查】"
+echo "----------------------------------------"
+
+# 检查 opencode 挂载
+echo -n "opencode 配置挂载: "
+if podman inspect "$CONTAINER_NAME" --format '{{json .Mounts}}' 2>/dev/null | grep -q '"Source": ".*opencode"'; then
+    src=$(podman inspect "$CONTAINER_NAME" --format '{{json .Mounts}}' 2>/dev/null | python3 -c "
+import json,sys
+mounts = json.load(sys.stdin)
+for m in mounts:
+    if 'opencode' in m.get('Source', ''):
+        print(m.get('Source'))
+        break
+")
+    dst=$(podman inspect "$CONTAINER_NAME" --format '{{json .Mounts}}' 2>/dev/null | python3 -c "
+import json,sys
+mounts = json.load(sys.stdin)
+for m in mounts:
+    if 'opencode' in m.get('Source', ''):
+        print(m.get('Destination'))
+        break
+")
+    echo "✅"
+    echo "  Source: $src"
+    echo "  Dest:   $dst"
+    
+    # 检查内容是否匹配
+    echo
+    echo "【内容对比】"
+    echo "主机 $src 的内容:"
+    ls -la "$src" 2>/dev/null | head -10 || echo "  (无法访问)"
+    echo
+    echo "容器 $dst 的内容:"
+    podman exec "$CONTAINER_NAME" ls -la "$dst" 2>/dev/null | head -10 || echo "  (无法访问)"
+else
+    echo "❌ 未找到 opencode 挂载"
+fi
+
+echo
+echo "【预期挂载 vs 实际挂载】"
+echo "----------------------------------------"
+echo "根据 config.yaml，occ agent 应该挂载:"
+echo "  1. ~/.claude → /home/agentboxuser/.claude"
+echo "  2. ~/.config/opencode → /home/agentboxuser/.config/opencode"
+echo
+
+echo "实际检测到的挂载:"
+podman inspect "$CONTAINER_NAME" --format '{{json .Mounts}}' 2>/dev/null | python3 -c "
+import json,sys
+mounts = json.load(sys.stdin)
+found_claude = False
+found_opencode = False
+for m in mounts:
+    src = m.get('Source', '')
+    dst = m.get('Destination', '')
+    if 'claude' in src.lower():
+        print(f'  ✅ .claude: {src} → {dst}')
+        found_claude = True
+    if 'opencode' in src.lower():
+        print(f'  ✅ opencode: {src} → {dst}')
+        found_opencode = True
+if not found_claude:
+    print('  ❌ .claude 未挂载')
+if not found_opencode:
+    print('  ❌ opencode 未挂载')
+"
+
+echo

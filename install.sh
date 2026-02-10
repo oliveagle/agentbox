@@ -6,7 +6,7 @@ set -euo pipefail
 REPO_URL="https://github.com/oliveagle/agentbox"
 INSTALL_DIR="${HOME}/.local/bin"
 CONFIG_DIR="${HOME}/.config/agentbox"
-REPO_DIR="${HOME}/.local/share/agentbox"
+SHARE_DIR="${HOME}/.local/share/agentbox"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -48,17 +48,30 @@ check_dependencies() {
 
 clone_repo() {
     log_info "下载 AI Agent Toolbox..."
-    
-    if [[ -d "$REPO_DIR" ]]; then
-        rm -rf "$REPO_DIR"
+
+    # 本地开发模式：如果当前目录是 git repo，直接复制
+    if [[ -d ".git" && -f "agentbox" ]]; then
+        log_info "检测到本地开发环境，使用当前目录..."
+        if [[ -d "$SHARE_DIR" ]]; then
+            rm -rf "$SHARE_DIR"
+        fi
+        mkdir -p "$SHARE_DIR"
+        cp -r . "$SHARE_DIR/"
+        log_success "本地复制完成"
+        return
     fi
-    
-    mkdir -p "$(dirname "$REPO_DIR")"
-    git clone --depth 1 "$REPO_URL" "$REPO_DIR" 2>/dev/null || {
+
+    # 否则从 GitHub 克隆
+    if [[ -d "$SHARE_DIR" ]]; then
+        rm -rf "$SHARE_DIR"
+    fi
+
+    mkdir -p "$(dirname "$SHARE_DIR")"
+    git clone --depth 1 "$REPO_URL" "$SHARE_DIR" 2>/dev/null || {
         log_error "下载失败"
         exit 1
     }
-    
+
     log_success "下载完成"
 }
 
@@ -68,7 +81,7 @@ install_agentbox() {
     mkdir -p "$INSTALL_DIR"
     mkdir -p "$CONFIG_DIR"
 
-    cp "$REPO_DIR/agentbox" "$INSTALL_DIR/"
+    cp "$SHARE_DIR/agentbox" "$INSTALL_DIR/"
     chmod +x "$INSTALL_DIR/agentbox"
 
     log_success "Installed: $INSTALL_DIR/agentbox"
@@ -78,7 +91,7 @@ generate_wrappers() {
     log_info "Generating agent wrapper scripts..."
 
     export INSTALL_DIR="$INSTALL_DIR"
-    bash "$REPO_DIR/lib/generate-wrappers.sh"
+    bash "$SHARE_DIR/lib/generate-wrappers.sh"
 
     log_success "Wrapper scripts generated"
 }
@@ -96,7 +109,7 @@ check_path() {
 
 build_images() {
     log_info "构建基础镜像..."
-    cd "$REPO_DIR"
+    cd "$SHARE_DIR"
 
     # Build args for proxy (from environment variables)
     local build_args=()
@@ -111,22 +124,22 @@ build_images() {
     build_args+=(--network=host)
 
     # Use absolute path for COPY to avoid podman context escaping issues
-    cp "$REPO_DIR/lib/agentbox-entrypoint.sh" "$REPO_DIR/images/agentbox-entrypoint.sh"
+    cp "$SHARE_DIR/lib/agentbox-entrypoint.sh" "$SHARE_DIR/images/agentbox-entrypoint.sh"
     if podman build "${build_args[@]}" -t localhost/agentbox-base:latest -f images/Containerfile.base images; then
         log_success "基础镜像构建成功"
     else
-        rm -f "$REPO_DIR/images/agentbox-entrypoint.sh"
+        rm -f "$SHARE_DIR/images/agentbox-entrypoint.sh"
         log_warn "基础镜像构建失败"
         return 1
     fi
-    rm -f "$REPO_DIR/images/agentbox-entrypoint.sh"
+    rm -f "$SHARE_DIR/images/agentbox-entrypoint.sh"
 
     log_info "构建 Agent 镜像..."
 
     for agent in occ; do
-        if [[ -f "$REPO_DIR/agents/$agent/Containerfile" ]]; then
+        if [[ -f "$SHARE_DIR/agents/$agent/Containerfile" ]]; then
             log_info "构建 $agent..."
-            cd "$REPO_DIR/agents/$agent"
+            cd "$SHARE_DIR/agents/$agent"
             podman build "${build_args[@]}" -t "localhost/agentbox-${agent}:latest" -f Containerfile . || log_warn "$agent 构建失败"
         fi
     done

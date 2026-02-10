@@ -12,6 +12,7 @@ TOOLBOX_BASE_IMAGE="${TOOLBOX_BASE_IMAGE:-${AGENTBOX_BASE_IMAGE}}"
 CONTAINER_ENGINE="${CONTAINER_ENGINE:-podman}"
 INSTALL_DIR="${INSTALL_DIR:-${HOME}/.local/share/agentbox}"
 CONFIG_DIR="${HOME}/.config/agentbox"
+CONFIG_FILE="${CONFIG_DIR}/config.yaml"
 
 # 颜色
 RED='\033[0;31m'
@@ -112,98 +113,45 @@ get_agents_dir() {
     echo ""
 }
 
+# 获取数据目录（包含模板文件的目录）
+get_share_dir() {
+    local script_dir
+    script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+    # 如果脚本在 bin 目录，模板在 share/agentbox
+    if [[ "$script_dir" == *".local/bin"* ]]; then
+        echo "${HOME}/.local/share/agentbox"
+        return
+    fi
+
+    # 如果脚本在 share 目录，使用同一目录
+    if [[ "$script_dir" == *".local/share/agentbox"* ]]; then
+        echo "${HOME}/.local/share/agentbox"
+        return
+    fi
+
+    # 否则使用脚本所在目录（开发模式）
+    echo "$script_dir"
+}
+
 # 初始化配置
 init_config() {
     if [[ ! -d "$CONFIG_DIR" ]]; then
         mkdir -p "$CONFIG_DIR"
     fi
     
-    if [[ ! -f "$CONFIG_DIR/agents.yaml" ]]; then
-        cat > "$CONFIG_DIR/agents.yaml" << 'EOF'
-# AI Agent Toolbox 配置
+    if [[ ! -f "$CONFIG_DIR/config.yaml" ]]; then
+        local share_dir
+        share_dir=$(get_share_dir)
+        local template_file="${share_dir}/config.yaml"
 
-# 默认 Agent
-default_agent: opencode
-
-# Agent 定义
-agents:
-  opencode:
-    name: OpenCode
-    description: OpenCode AI coding agent
-    image: localhost/agentbox-opencode:latest
-    cmd: opencode
-    config_dir: ~/.config/opencode
-    
-  claude-code:
-    name: Claude Code
-    description: Anthropic Claude Code
-    image: localhost/agentbox-claude-code:latest
-    cmd: claude
-    config_dir: ~/.config/claude
-    
-  kilo:
-    name: Kilo
-    description: Kilo AI coding agent
-    image: localhost/agentbox-kilo:latest
-    cmd: kilo
-    config_dir: ~/.config/kilo
-    
-  copilot:
-    name: GitHub Copilot
-    description: GitHub Copilot CLI
-    image: localhost/agentbox-copilot:latest
-    cmd: "gh copilot"
-    config_dir: ~/.config/gh
-    
-  qwen:
-    name: Qwen
-    description: Qwen AI coding agent
-    image: localhost/agentbox-qwen:latest
-    cmd: qwen
-    config_dir: ~/.config/qwen
-    
-  codebuddy:
-    name: CodeBuddy
-    description: CodeBuddy AI agent
-    image: localhost/agentbox-codebuddy:latest
-    cmd: codebuddy
-    config_dir: ~/.config/codebuddy
-
-  occ:
-    name: OCC
-    description: OpenCode + Claude Code combined
-    image: localhost/agentbox-occ:latest
-    cmd: claude
-    config_dir: ~/.config/claude
-
-# 默认挂载设置
-mounts:
-  # 项目代码（必须）
-  project: true
-  
-  # Agent 配置（必须）
-  agent_config: true
-  
-  # Git 配置
-  gitconfig: true
-  
-  # SSH keys
-  ssh: false
-  
-  # Docker/Podman socket
-  docker: false
-  
-  # 显示服务器
-  display: true
-  
-  # 共享缓存目录
-  shared_cache: true
-
-# 全局环境变量
-env:
-  EDITOR: vim
-  TZ: Asia/Shanghai
-EOF
+        if [[ -f "$template_file" ]]; then
+            cp "$template_file" "$CONFIG_DIR/config.yaml"
+            log_info "已复制配置模板: $template_file -> $CONFIG_DIR/config.yaml"
+        else
+            log_error "配置模板不存在: $template_file"
+            exit 1
+        fi
     fi
 
     # Generate SSH key pair for agentbox if not exists
@@ -239,8 +187,8 @@ get_agentbox_ssh_dir() {
 get_agent_config() {
     local agent="$1"
     local key="$2"
-    local config_file="$CONFIG_DIR/agents.yaml"
-    
+    local config_file="$CONFIG_FILE"
+
     if [[ -f "$config_file" ]]; then
         grep -A 20 "^  ${agent}:" "$config_file" 2>/dev/null | \
         grep "^    ${key}:" | head -1 | sed "s/^    ${key}:\s*//" | tr -d '"' || echo ""
@@ -253,7 +201,7 @@ get_agent_config() {
 get_agent_config_list() {
     local agent="$1"
     local key="$2"
-    local config_file="$CONFIG_DIR/agents.yaml"
+    local config_file="$CONFIG_FILE"
 
     if [[ -f "$config_file" ]]; then
         # First check if it's a YAML array (multi-line format)
@@ -285,8 +233,8 @@ get_agent_config_list() {
 # 获取全局配置
 get_global_config() {
     local key="$1"
-    local config_file="$CONFIG_DIR/agents.yaml"
-    
+    local config_file="$CONFIG_FILE"
+
     if [[ -f "$config_file" ]]; then
         grep "^  ${key}:" "$config_file" 2>/dev/null | head -1 | sed "s/^  ${key}:\s*//" | tr -d '"' || echo ""
     else
@@ -1000,7 +948,7 @@ Agents:
   # 构建所有镜像
   agentbox build-all
 
-配置: ~/.config/agentbox/agents.yaml
+ 配置: ~/.config/agentbox/config.yaml
 
 EOF
 }

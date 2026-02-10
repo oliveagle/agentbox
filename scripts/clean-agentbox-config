@@ -1,0 +1,23 @@
+#!/bin/bash
+# 清理 agentbox 配置
+# 删除所有配置文件（包括旧的 agents.yaml 和新的 config.yaml）
+
+set -euo pipefail
+
+echo "清理 agentbox 配置..."
+
+# 删除旧的 agents.yaml
+rm -f ~/.local/share/agentbox/agents.yaml
+echo "  删除: ~/.local/share/agentbox/agents.yaml"
+
+rm -f ~/.config/agentbox/agents.yaml
+echo "  删除: ~/.config/agentbox/agents.yaml"
+
+# 删除新的 config.yaml
+rm -f ~/.local/share/agentbox/config.yaml
+echo "  删除: ~/.local/share/agentbox/config.yaml"
+
+rm -f ~/.config/agentbox/config.yaml
+echo "  删除: ~/.config/agentbox/config.yaml"
+
+echo "完成。"
