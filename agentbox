@@ -291,9 +291,12 @@ build_base_image() {
     build_args+=(--network=host)
 
     cd "$script_dir/images"
+    # Use absolute path for COPY to avoid podman context escaping issues
+    cp "$script_dir/lib/agentbox-entrypoint.sh" ./agentbox-entrypoint.sh
     "$CONTAINER_ENGINE" build "${build_args[@]}" -t "$TOOLBOX_BASE_IMAGE" -f Containerfile.base . && \
         log_success "基础镜像构建成功: $TOOLBOX_BASE_IMAGE" || \
         log_error "基础镜像构建失败"
+    rm -f ./agentbox-entrypoint.sh
 }
 
 # 构建 Agent 镜像
@@ -483,7 +486,30 @@ generate_mount_args() {
             done
         fi
     fi
-    
+
+    # Agent 配置文件（单个文件）
+    local agent_config_files_raw
+    agent_config_files_raw=$(get_agent_config_list "$agent" "config_files")
+    if [[ -n "$agent_config_files_raw" ]]; then
+        IFS=' ' read -ra files <<< "$agent_config_files_raw"
+        for config_file in "${files[@]}"; do
+            config_file=$(echo "$config_file" | xargs)
+            [[ -z "$config_file" ]] && continue
+
+            # 如果路径以 ~ 开头，展开为 $HOST_HOME
+            if [[ "$config_file" == "~"* ]]; then
+                config_file="$HOST_HOME${config_file:1}"
+            fi
+
+            if [[ -f "$config_file" ]]; then
+                local file_name
+                file_name=$(basename "$config_file")
+                local container_dest="${agentbox_home}/${file_name}"
+                mount_args+=(--volume "${config_file}:${container_dest}:rw")
+            fi
+        done
+    fi
+
     # Git 配置
     local mount_git
     mount_git=$(get_global_config "gitconfig")

@@ -106,7 +106,7 @@ RUN mkdir -p /usr/share/empty && \
 RUN rm -rf /home/*
 
 # 复制并设置 entrypoint 脚本
-COPY lib/agentbox-entrypoint.sh /usr/local/bin/agentbox-entrypoint.sh
+COPY agentbox-entrypoint.sh /usr/local/bin/agentbox-entrypoint.sh
 RUN chmod +x /usr/local/bin/agentbox-entrypoint.sh
 
 # 使用 entrypoint 来初始化权限
