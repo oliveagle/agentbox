@@ -1,0 +1,23 @@
+# Claude Code Agent
+ARG BASE_IMAGE=localhost/agentbox-base:latest
+FROM ${BASE_IMAGE}
+
+LABEL agent="claude-code"
+LABEL description="Anthropic Claude Code agent"
+
+# Install Claude Code
+RUN curl -fsSL https://claude.ai/install | bash || \
+    npm install -g @anthropic-ai/claude-code 2>/dev/null || \
+    echo "Claude Code requires manual install: npm install -g @anthropic-ai/claude-code"
+
+# Create config directories
+RUN mkdir -p /home/agentboxuser/.config/claude && \
+    chown -R agentboxuser:agentboxuser /home/agentboxuser/.config
+
+# Copy skip script
+COPY claude-skip /usr/local/bin/
+RUN chmod +x /usr/local/bin/claude-skip
+
+# Default command
+ENV AGENT_NAME=claude-code
+ENV AGENT_CMD=claude

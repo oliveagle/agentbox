@@ -24,6 +24,10 @@ RUN apt-get update && apt-get install -y \
     hub \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy skip scripts
+COPY claude-skip opencode-skip /usr/local/bin/
+RUN chmod +x /usr/local/bin/claude-skip /usr/local/bin/opencode-skip
+
 # Default to Claude Code (more popular)
 ENV AGENT_NAME=occ
 ENV AGENT_CMD=claude

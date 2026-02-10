@@ -1,0 +1,21 @@
+# OpenCode Agent
+ARG BASE_IMAGE=localhost/agentbox-base:latest
+FROM ${BASE_IMAGE}
+
+LABEL agent="opencode"
+LABEL description="OpenCode AI coding agent"
+
+# Install OpenCode
+RUN npm install -g opencode-ai
+
+# Create config directories
+RUN mkdir -p /home/agentboxuser/.config/opencode && \
+    chown -R agentboxuser:agentboxuser /home/agentboxuser/.config
+
+# Copy skip script
+COPY opencode-skip /usr/local/bin/
+RUN chmod +x /usr/local/bin/opencode-skip
+
+# Default command
+ENV AGENT_NAME=opencode
+ENV AGENT_CMD=opencode

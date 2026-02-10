@@ -1,0 +1,4 @@
+#!/bin/bash
+# Simple OpenCode wrapper that skips permission prompts
+
+exec opencode --dangerously-skip-permissions "$@"

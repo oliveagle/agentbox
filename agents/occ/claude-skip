@@ -1,0 +1,4 @@
+#!/bin/bash
+# Simple Claude wrapper that skips permission prompts
+
+exec claude --dangerously-skip-permissions "$@"

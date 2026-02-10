@@ -296,6 +296,22 @@ agentbox enter occ .
 - Shared configuration and cache
 - Use `claude` or `opencode` commands as needed
 
+**Skip Permission Scripts:**
+
+The OCC agent includes wrapper scripts to skip permission prompts:
+
+```bash
+# Use claude-skip to skip all permission prompts
+⬢ occ:~$ claude-skip
+
+# Use opencode-skip to skip all permission prompts
+⬢ occ:~$ opencode-skip
+```
+
+These are equivalent to running:
+- `claude --dangerously-skip-permissions`
+- `opencode --dangerously-skip-permissions`
+
 ## Adding New Agents
 
 1. Create `agents/<name>/Containerfile`:
