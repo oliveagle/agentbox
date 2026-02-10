@@ -2,7 +2,7 @@ name: Check and Update Versions
 
 on:
   schedule:
-    - cron: '0 0 * * 0'
+    - cron: '0 0 * * *'
   workflow_dispatch:
   repository_dispatch:
     types: [upstream_release]
