@@ -50,3 +50,7 @@ claude_code=2.1.62
 ## 2026-03-01
 opencode=1.2.15
 claude_code=2.1.63
+
+## 2026-03-04
+opencode=1.2.16
+claude_code=2.1.63
