@@ -174,3 +174,7 @@ claude_code=2.1.94
 ## 2026-04-09
 opencode=1.4.0
 claude_code=2.1.97
+
+## 2026-04-10
+opencode=1.4.2
+claude_code=2.1.98
