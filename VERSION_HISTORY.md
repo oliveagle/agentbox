@@ -218,3 +218,7 @@ claude_code=2.1.116
 ## 2026-04-22
 opencode=1.14.20
 claude_code=2.1.117
+
+## 2026-04-24
+opencode=1.14.22
+claude_code=2.1.119
