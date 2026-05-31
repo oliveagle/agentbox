@@ -346,3 +346,7 @@ claude_code=2.1.154
 ## 2026-05-30
 opencode=1.15.12
 claude_code=2.1.157
+
+## 2026-05-31
+opencode=1.15.13
+claude_code=2.1.158
