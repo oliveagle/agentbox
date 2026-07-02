@@ -450,3 +450,7 @@ claude_code=2.1.196
 ## 2026-07-01
 opencode=1.17.12
 claude_code=2.1.197
+
+## 2026-07-02
+opencode=1.17.13
+claude_code=2.1.198
