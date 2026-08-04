@@ -538,3 +538,7 @@ claude_code=2.1.220
 ## 2026-08-02
 opencode=1.18.11
 claude_code=2.1.220
+
+## 2026-08-04
+opencode=1.18.12
+claude_code=2.1.221
