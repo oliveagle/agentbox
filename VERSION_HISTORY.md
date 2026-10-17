@@ -774,3 +774,7 @@ claude_code=2.1.300
 ## 2026-10-16
 opencode=1.19.1
 claude_code=2.1.301
+
+## 2026-10-17
+opencode=1.19.3
+claude_code=2.1.302
