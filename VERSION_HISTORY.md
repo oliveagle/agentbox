@@ -814,3 +814,7 @@ claude_code=2.1.312
 ## 2026-10-29
 opencode=1.19.5
 claude_code=2.1.312
+
+## 2026-10-30
+opencode=1.19.5
+claude_code=2.1.314
